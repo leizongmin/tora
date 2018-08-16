@@ -9,17 +9,27 @@ import (
 )
 
 type Server struct {
-	Options    Options
-	httpServer *http.Server
+	Options           Options
+	httpServer        *http.Server
+	enableModuleFile  bool
+	enableModuleShell bool
+	enableModuleLog   bool
 }
 
 type Options struct {
-	Addr string `json:"addr"` // 监听地址，格式：指定端口=:12345 指定地址和端口=127.0.0.1:12345 监听unix-socket=/path/to/sock
+	Addr     string   `json:"addr"`     // 监听地址，格式：指定端口=:12345 指定地址和端口=127.0.0.1:12345 监听unix-socket=/path/to/sock
+	Enable   []string `json:"enable"`   // 开启的模块，可选：file, shell, log
+	FileRoot string   `json:"fileRoot"` // 文件服务的根目录，如果开启了file模块，需要设置此项
 }
 
+// 默认监听地址
 const DefaultListenAddr = ":12345"
 
-func NewServer(options Options) *Server {
+func NewServer(options Options) (*Server, error) {
+	if len(options.Addr) < 1 {
+		options.Addr = DefaultListenAddr
+	}
+
 	s := &Server{}
 	s.httpServer = &http.Server{}
 	s.httpServer.Addr = options.Addr
@@ -38,7 +48,28 @@ func NewServer(options Options) *Server {
 			s.handleModuleError(w, r, module)
 		}
 	})
-	return s
+
+	if len(options.Enable) > 0 {
+		for _, n := range options.Enable {
+			switch n {
+			case "file":
+				s.enableModuleFile = true
+			case "shell":
+				s.enableModuleShell = true
+			case "log":
+				s.enableModuleLog = true
+			default:
+				return nil, fmt.Errorf("unsupported module type [%s]", n)
+			}
+		}
+	}
+	if s.enableModuleFile {
+		if len(options.FileRoot) < 1 {
+			return nil, fmt.Errorf("missing option [FileRoot] when module type [file] is enable")
+		}
+	}
+
+	return s, nil
 }
 
 func (s *Server) Start() error {
@@ -64,21 +95,33 @@ func (s *Server) Close() error {
 }
 
 func (s *Server) handleModuleFile(w http.ResponseWriter, r *http.Request) {
-	common.ResponseApiError(w, "currently not support file module", nil)
+	if !s.enableModuleFile {
+		common.ResponseApiError(w, "currently not enable [file] module", nil)
+		return
+	}
+	common.ResponseApiError(w, "currently not supported [file] module", nil)
 }
 
 func (s *Server) handleModuleShell(w http.ResponseWriter, r *http.Request) {
-	common.ResponseApiError(w, "currently not support shell module", nil)
+	if !s.enableModuleShell {
+		common.ResponseApiError(w, "currently not enable [shell] module", nil)
+		return
+	}
+	common.ResponseApiError(w, "currently not supported [shell] module", nil)
 }
 
 func (s *Server) handleModuleLog(w http.ResponseWriter, r *http.Request) {
-	common.ResponseApiError(w, "currently not support log module", nil)
+	if !s.enableModuleLog {
+		common.ResponseApiError(w, "currently not enable [log] module", nil)
+		return
+	}
+	common.ResponseApiError(w, "currently not supported [log] module", nil)
 }
 
 func (s *Server) handleModuleError(w http.ResponseWriter, r *http.Request, name string) {
 	if name == "" {
-		common.ResponseApiError(w, "missing x-module header", nil)
+		common.ResponseApiError(w, "missing [x-module] header", nil)
 		return
 	}
-	common.ResponseApiError(w, fmt.Sprintf("not supported module: %s", name), nil)
+	common.ResponseApiError(w, fmt.Sprintf("not supported module [%s]", name), nil)
 }

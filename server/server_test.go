@@ -11,7 +11,8 @@ import (
 )
 
 func TestNewServer(t *testing.T) {
-	s := NewServer(Options{Addr: ":12345"})
+	s, err := NewServer(Options{Addr: ":12345"})
+	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, s)
 	go s.Start()
 	time.Sleep(time.Second)
@@ -24,7 +25,7 @@ func TestNewServer(t *testing.T) {
 	assert.Equal(t, nil, err)
 	body, err := ioutil.ReadAll(res.Body)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, "{\"data\":null,\"error\":\"missing x-module header\",\"ok\":false}", string(body))
+	assert.Equal(t, "{\"data\":null,\"error\":\"missing [x-module] header\",\"ok\":false}", string(body))
 	fmt.Println(res.Header)
 
 	s.Close()
