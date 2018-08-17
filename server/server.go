@@ -20,10 +20,12 @@ type Server struct {
 }
 
 type Options struct {
-	Addr     string   `json:"addr"`     // 监听地址，格式：指定端口=:12345 指定地址和端口=127.0.0.1:12345 监听unix-socket=/path/to/sock
-	Enable   []string `json:"enable"`   // 开启的模块，可选：file, shell, log
-	FileRoot string   `json:"fileRoot"` // 文件服务的根目录，如果开启了file模块，需要设置此项
+	Addr        string          `json:"addr"`        // 监听地址，格式：指定端口=:12345 指定地址和端口=127.0.0.1:12345 监听unix-socket=/path/to/sock
+	Enable      []string        `json:"enable"`      // 开启的模块，可选：file, shell, log
+	FileOptions file.ModuleFile `json:"fileOptions"` // 文件服务的根目录，如果开启了file模块，需要设置此项
 }
+
+type FileOptions = file.ModuleFile
 
 // 默认监听地址
 const DefaultListenAddr = ":12345"
@@ -67,14 +69,15 @@ func NewServer(options Options) (*Server, error) {
 		}
 	}
 	if s.enableModuleFile {
-		if len(options.FileRoot) < 1 {
+		if len(options.FileOptions.FileRoot) < 1 {
 			return nil, fmt.Errorf("missing option [FileRoot] when module type [file] is enable")
 		}
-		root, err := filepath.Abs(options.FileRoot)
+		root, err := filepath.Abs(options.FileOptions.FileRoot)
 		if err != nil {
 			return nil, err
 		}
-		s.moduleFile = &file.ModuleFile{FileRoot: root}
+		options.FileOptions.FileRoot = root
+		s.moduleFile = &options.FileOptions
 	}
 
 	return s, nil

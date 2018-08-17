@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -58,11 +59,11 @@ func (m *ModuleFile) handleGet(w http.ResponseWriter, r *http.Request, f string)
 		common.ResponseApiError(w, err.Error(), nil)
 	}
 	if s.IsDir() {
-		if !m.AllowListDir {
-			common.ResponseApiError(w, "not allowed list directory", nil)
-			return
+		if m.AllowListDir {
+			responseDirList(w, f, s)
+		} else {
+			responseDirInfo(w, f, s)
 		}
-		responseDirList(w, f, s)
 		return
 	}
 	responseFileContent(w, f, s)
@@ -75,10 +76,10 @@ func (m *ModuleFile) handlePut(w http.ResponseWriter, r *http.Request, f string)
 	}
 
 	md5 := r.Header.Get("x-content-md5")
-	tmpFile := fmt.Sprintf(".%s.%d-%d", f, time.Now().Unix(), rand.Uint32())
+	tmpFile := filepath.Join(filepath.Dir(f), fmt.Sprintf(".%s.%d-%d", filepath.Base(f), time.Now().Unix(), rand.Uint32()))
 
 	// 先存储到临时文件
-	tmpFd, err := os.Open(tmpFile)
+	tmpFd, err := os.Create(tmpFile)
 	if err != nil {
 		common.ResponseApiError(w, err.Error(), nil)
 		return
@@ -107,7 +108,7 @@ func (m *ModuleFile) handlePut(w http.ResponseWriter, r *http.Request, f string)
 
 	// 删除旧文件，覆盖新文件
 	err = os.Remove(f)
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		common.ResponseApiError(w, err.Error(), nil)
 		return
 	}
@@ -155,6 +156,14 @@ func responseDirList(w http.ResponseWriter, f string, s os.FileInfo) {
 		"name":  s.Name(),
 		"isDir": true,
 		"files": list2,
+	})
+}
+
+func responseDirInfo(w http.ResponseWriter, f string, s os.FileInfo) {
+	common.ResponseApiOk(w, common.JSON{
+		"name":  s.Name(),
+		"isDir": true,
+		"files": nil,
 	})
 }
 

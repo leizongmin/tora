@@ -18,7 +18,7 @@ func resolveFilePath(root string, url string) (string, error) {
 	if err != nil {
 		return p, err
 	}
-	if strings.Index(p, root+string(os.PathSeparator)) > 0 {
+	if strings.Index(p, root+string(os.PathSeparator)) >= 0 {
 		return p, nil
 	}
 	return p, fmt.Errorf("cannot access to %s", url)
