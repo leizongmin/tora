@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
 )
@@ -20,14 +21,20 @@ func ResponseJson(w http.ResponseWriter, statusCode int, data JSON) {
 	w.Write(b)
 }
 
-func ResponseApiOk(w http.ResponseWriter, data JSON) {
-	ResponseJson(w, 200, JSON{"ok": true, "data": data})
+func ResponseApiOk(log *logrus.Entry, w http.ResponseWriter, data JSON) {
+	d := JSON{"ok": true, "data": data}
+	log.Debug(d)
+	ResponseJson(w, 200, d)
 }
 
-func ResponseApiError(w http.ResponseWriter, error string, data JSON) {
-	ResponseJson(w, 500, JSON{"ok": false, "error": error, "data": data})
+func ResponseApiError(log *logrus.Entry, w http.ResponseWriter, error string, data JSON) {
+	d := JSON{"ok": false, "error": error, "data": data}
+	log.Warn(d)
+	ResponseJson(w, 500, d)
 }
 
-func ResponseApiErrorWithStatusCode(w http.ResponseWriter, statusCode int, error string, data JSON) {
-	ResponseJson(w, statusCode, JSON{"ok": false, "error": error, "data": data})
+func ResponseApiErrorWithStatusCode(log *logrus.Entry, w http.ResponseWriter, statusCode int, error string, data JSON) {
+	d := JSON{"ok": false, "error": error, "data": data}
+	log.Warn(d)
+	ResponseJson(w, statusCode, d)
 }

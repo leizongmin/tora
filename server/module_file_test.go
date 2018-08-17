@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/json-iterator/go"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"math/rand"
@@ -46,13 +47,11 @@ func TestModuleFile(t *testing.T) {
 	}
 
 	s, err := NewServer(Options{
+		Log:    logrus.New(),
 		Addr:   ":12345",
 		Enable: []string{"file"},
 		FileOptions: FileOptions{
 			Root: root,
-			//AllowListDir: true,
-			//AllowDelete:  true,
-			//AllowPut:     true,
 		},
 	})
 	if err != nil {
