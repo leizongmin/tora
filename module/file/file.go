@@ -42,15 +42,19 @@ func (m *ModuleFile) Handle(w http.ResponseWriter, r *http.Request) {
 func (m *ModuleFile) handleHead(w http.ResponseWriter, r *http.Request, f string) {
 	s, err := os.Stat(f)
 	if err != nil {
-		common.ResponseApiError(w, err.Error(), nil)
+		w.Header().Set("x-ok", "false")
+		w.Header().Set("x-error", err.Error())
+		w.WriteHeader(500)
+		return
 	}
+	w.Header().Set("x-ok", "true")
 	if s.IsDir() {
 		w.Header().Set("x-file-type", "dir")
 	} else {
 		w.Header().Set("x-file-type", "file")
+		w.Header().Set("x-file-size", string(s.Size()))
+		w.Header().Set("x-last-modified", s.ModTime().UTC().String())
 	}
-	w.Header().Set("x-file-size", string(s.Size()))
-	w.Header().Set("x-last-modified", s.ModTime().UTC().String())
 }
 
 func (m *ModuleFile) handleGet(w http.ResponseWriter, r *http.Request, f string) {

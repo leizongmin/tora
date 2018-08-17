@@ -329,6 +329,50 @@ func TestModuleFile(t *testing.T) {
 			assert.Equal(t, false, data.Get("ok").ToBool())
 		}
 	}
+	{
+		// 判断文件是否存在
+		{
+			// 不存在
+			req, err := http.NewRequest("HEAD", "http://127.0.0.1:12345/abcd/efg", nil)
+			assert.Equal(t, nil, err)
+			req.Header.Set("x-module", "file")
+			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+			req.WithContext(ctx)
+			res, err := http.DefaultClient.Do(req)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, 500, res.StatusCode)
+			assert.Equal(t, "false", res.Header.Get("x-ok"))
+			assert.Equal(t, true, len(res.Header.Get("x-error")) > 0)
+		}
+		{
+			// 文件存在
+			req, err := http.NewRequest("HEAD", "http://127.0.0.1:12345/"+filepath.Base(file1), nil)
+			assert.Equal(t, nil, err)
+			req.Header.Set("x-module", "file")
+			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+			req.WithContext(ctx)
+			res, err := http.DefaultClient.Do(req)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, 200, res.StatusCode)
+			assert.Equal(t, "true", res.Header.Get("x-ok"))
+			assert.Equal(t, "file", res.Header.Get("x-file-type"))
+			assert.Equal(t, string(len(file1Content)), res.Header.Get("x-file-size"))
+			assert.Equal(t, file1Stat.ModTime().UTC().String(), res.Header.Get("x-last-modified"))
+		}
+		{
+			// 目录存在
+			req, err := http.NewRequest("HEAD", "http://127.0.0.1:12345", nil)
+			assert.Equal(t, nil, err)
+			req.Header.Set("x-module", "file")
+			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+			req.WithContext(ctx)
+			res, err := http.DefaultClient.Do(req)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, 200, res.StatusCode)
+			assert.Equal(t, "true", res.Header.Get("x-ok"))
+			assert.Equal(t, "dir", res.Header.Get("x-file-type"))
+		}
+	}
 	s.Close()
 }
 
