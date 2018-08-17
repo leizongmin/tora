@@ -23,18 +23,18 @@ func ResponseJson(w http.ResponseWriter, statusCode int, data JSON) {
 
 func ResponseApiOk(log *logrus.Entry, w http.ResponseWriter, data JSON) {
 	d := JSON{"ok": true, "data": data}
-	log.Debug(d)
+	log.Info("OK")
 	ResponseJson(w, 200, d)
 }
 
-func ResponseApiError(log *logrus.Entry, w http.ResponseWriter, error string, data JSON) {
-	d := JSON{"ok": false, "error": error, "data": data}
-	log.Warn(d)
+func ResponseApiError(log *logrus.Entry, w http.ResponseWriter, err string, data JSON) {
+	d := JSON{"ok": false, "err": err, "data": data}
+	log.WithField("err", err).Warn("Error")
 	ResponseJson(w, 500, d)
 }
 
-func ResponseApiErrorWithStatusCode(log *logrus.Entry, w http.ResponseWriter, statusCode int, error string, data JSON) {
-	d := JSON{"ok": false, "error": error, "data": data}
-	log.Warn(d)
+func ResponseApiErrorWithStatusCode(log *logrus.Entry, w http.ResponseWriter, statusCode int, err string, data JSON) {
+	d := JSON{"ok": false, "err": err, "data": data}
+	log.WithField("err", err).Warn("Error")
 	ResponseJson(w, statusCode, d)
 }
