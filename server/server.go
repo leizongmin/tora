@@ -3,8 +3,10 @@ package server
 import (
 	"fmt"
 	"github.com/leizongmin/tora/common"
+	"github.com/leizongmin/tora/module/file"
 	"net"
 	"net/http"
+	"path/filepath"
 	"strings"
 )
 
@@ -14,6 +16,7 @@ type Server struct {
 	enableModuleFile  bool
 	enableModuleShell bool
 	enableModuleLog   bool
+	moduleFile        *file.ModuleFile
 }
 
 type Options struct {
@@ -67,6 +70,11 @@ func NewServer(options Options) (*Server, error) {
 		if len(options.FileRoot) < 1 {
 			return nil, fmt.Errorf("missing option [FileRoot] when module type [file] is enable")
 		}
+		root, err := filepath.Abs(options.FileRoot)
+		if err != nil {
+			return nil, err
+		}
+		s.moduleFile = &file.ModuleFile{FileRoot: root}
 	}
 
 	return s, nil
@@ -86,7 +94,6 @@ func (s *Server) Start() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(l)
 	return s.httpServer.Serve(l)
 }
 
@@ -99,7 +106,7 @@ func (s *Server) handleModuleFile(w http.ResponseWriter, r *http.Request) {
 		common.ResponseApiError(w, "currently not enable [file] module", nil)
 		return
 	}
-	common.ResponseApiError(w, "currently not supported [file] module", nil)
+	s.moduleFile.Handle(w, r)
 }
 
 func (s *Server) handleModuleShell(w http.ResponseWriter, r *http.Request) {
