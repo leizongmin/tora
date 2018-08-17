@@ -81,7 +81,14 @@ func (m *ModuleFile) handlePut(w http.ResponseWriter, r *http.Request, f string)
 	}
 
 	md5 := r.Header.Get("x-content-md5")
-	tmpFile := filepath.Join(filepath.Dir(f), fmt.Sprintf(".%s.%d-%d", filepath.Base(f), time.Now().Unix(), rand.Uint32()))
+	dir := filepath.Dir(f)
+	tmpFile := filepath.Join(dir, fmt.Sprintf(".%s.%d-%d", filepath.Base(f), time.Now().Unix(), rand.Uint32()))
+
+	// 先保证目录存在
+	if err := os.MkdirAll(dir, 0766); err != nil {
+		common.ResponseApiError(w, err.Error(), nil)
+		return
+	}
 
 	// 先存储到临时文件
 	tmpFd, err := os.Create(tmpFile)

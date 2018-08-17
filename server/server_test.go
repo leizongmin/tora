@@ -282,7 +282,7 @@ func TestModuleFile(t *testing.T) {
 	}
 	{
 		// 删除文件，AllowDelete=false 不允许删除
-		req, err := http.NewRequest("DELETE", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
+		req, err := http.NewRequest("DELETE", "http://127.0.0.1:12345/"+filepath.Base(file3), nil)
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-module", "file")
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
@@ -300,7 +300,7 @@ func TestModuleFile(t *testing.T) {
 		s.moduleFile.AllowDelete = true
 		{
 			// 删除文件，成功
-			req, err := http.NewRequest("DELETE", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
+			req, err := http.NewRequest("DELETE", "http://127.0.0.1:12345/"+filepath.Base(file3), nil)
 			assert.Equal(t, nil, err)
 			req.Header.Set("x-module", "file")
 			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
@@ -371,6 +371,61 @@ func TestModuleFile(t *testing.T) {
 			assert.Equal(t, 200, res.StatusCode)
 			assert.Equal(t, "true", res.Header.Get("x-ok"))
 			assert.Equal(t, "dir", res.Header.Get("x-file-type"))
+		}
+	}
+	{
+		file4BaseName := "a/b/file4.txt"
+		file4 := filepath.Join(root, file4BaseName)
+		file4Content := []byte("fhjdhfhdsjhfkjsh939393")
+		file4Md5 := getMd5(file4Content)
+		{
+			// 上传文件
+			req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+file4BaseName, bytes.NewReader(file4Content))
+			assert.Equal(t, nil, err)
+			req.Header.Set("x-module", "file")
+			req.Header.Set("x-content-md5", file4Md5)
+			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+			req.WithContext(ctx)
+			res, err := http.DefaultClient.Do(req)
+			assert.Equal(t, nil, err)
+			body, err := ioutil.ReadAll(res.Body)
+			assert.Equal(t, nil, err)
+			data := jsoniter.Get(body)
+			assert.Equal(t, true, data.Get("ok").ToBool())
+			assert.Equal(t, true, data.Get("data", "checkedMd5").ToBool())
+		}
+		{
+			info, err := os.Stat(file4)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, filepath.Base(file4), info.Name())
+		}
+		{
+			// 获取文件内容
+			req, err := http.NewRequest("GET", "http://127.0.0.1:12345/"+file4BaseName, nil)
+			assert.Equal(t, nil, err)
+			req.Header.Set("x-module", "file")
+			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+			req.WithContext(ctx)
+			res, err := http.DefaultClient.Do(req)
+			assert.Equal(t, nil, err)
+			body, err := ioutil.ReadAll(res.Body)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, file4Content, body)
+		}
+		{
+			// 删除目录
+			req, err := http.NewRequest("DELETE", "http://127.0.0.1:12345/"+filepath.Dir(file4BaseName), nil)
+			assert.Equal(t, nil, err)
+			req.Header.Set("x-module", "file")
+			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+			req.WithContext(ctx)
+			res, err := http.DefaultClient.Do(req)
+			assert.Equal(t, nil, err)
+			body, err := ioutil.ReadAll(res.Body)
+			assert.Equal(t, nil, err)
+			data := jsoniter.Get(body)
+			assert.Equal(t, true, data.Get("ok").ToBool())
+			assert.Equal(t, true, data.Get("data", "success").ToBool())
 		}
 	}
 	s.Close()
