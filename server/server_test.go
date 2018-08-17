@@ -1,7 +1,10 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/json-iterator/go"
@@ -11,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -163,10 +167,25 @@ func TestModuleFile(t *testing.T) {
 		assert.Equal(t, filepath.Base(file2), f2.Get("name").ToString())
 		assert.Equal(t, file2Stat.ModTime().String(), f2.Get("modifiedTime").ToString())
 	}
+	{
+		// 获取文件内容
+		req, err := http.NewRequest("GET", "http://127.0.0.1:12345/"+filepath.Base(file1), nil)
+		assert.Equal(t, nil, err)
+		req.Header.Set("x-module", "file")
+		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		req.WithContext(ctx)
+		res, err := http.DefaultClient.Do(req)
+		assert.Equal(t, nil, err)
+		body, err := ioutil.ReadAll(res.Body)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, file1Content, body)
+	}
 	file3 := filepath.Join(root, "file3.txt")
+	file3Content := []byte("dajdjklfjdksjflkjds")
+	file3Md5 := getMd5(file3Content)
 	{
 		// 上传文件，AllowPut=false 未允许上传
-		req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), nil)
+		req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-module", "file")
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
@@ -183,7 +202,7 @@ func TestModuleFile(t *testing.T) {
 		// 设置允许上传文件
 		s.moduleFile.AllowPut = true
 		// 上传文件
-		req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), nil)
+		req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-module", "file")
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
@@ -196,7 +215,120 @@ func TestModuleFile(t *testing.T) {
 		assert.Equal(t, true, data.Get("ok").ToBool())
 		assert.Equal(t, false, data.Get("data", "checkedMd5").ToBool())
 	}
-
+	{
+		// 上传文件，增加 md5 校验，校验失败
+		req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
+		assert.Equal(t, nil, err)
+		req.Header.Set("x-module", "file")
+		req.Header.Set("x-content-md5", "is-must-bad")
+		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		req.WithContext(ctx)
+		res, err := http.DefaultClient.Do(req)
+		assert.Equal(t, nil, err)
+		body, err := ioutil.ReadAll(res.Body)
+		assert.Equal(t, nil, err)
+		data := jsoniter.Get(body)
+		assert.Equal(t, false, data.Get("ok").ToBool())
+		assert.Equal(t, fmt.Sprintf("md5 check failed: expected is-must-bad but got %s", file3Md5), data.Get("error").ToString())
+	}
+	{
+		// 上传文件，增加 md5 校验，校验成功
+		req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
+		assert.Equal(t, nil, err)
+		req.Header.Set("x-module", "file")
+		req.Header.Set("x-content-md5", strings.ToUpper(file3Md5))
+		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		req.WithContext(ctx)
+		res, err := http.DefaultClient.Do(req)
+		assert.Equal(t, nil, err)
+		body, err := ioutil.ReadAll(res.Body)
+		assert.Equal(t, nil, err)
+		data := jsoniter.Get(body)
+		assert.Equal(t, true, data.Get("ok").ToBool())
+		assert.Equal(t, true, data.Get("data", "checkedMd5").ToBool())
+	}
+	{
+		// 修改文件内容后检查是否正确
+		file3Content = []byte(fmt.Sprintf("%s%d", file3Content, rand.Uint32()))
+		file3Md5 = getMd5(file3Content)
+		{
+			req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
+			assert.Equal(t, nil, err)
+			req.Header.Set("x-module", "file")
+			req.Header.Set("x-content-md5", strings.ToUpper(file3Md5))
+			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+			req.WithContext(ctx)
+			res, err := http.DefaultClient.Do(req)
+			assert.Equal(t, nil, err)
+			body, err := ioutil.ReadAll(res.Body)
+			assert.Equal(t, nil, err)
+			data := jsoniter.Get(body)
+			assert.Equal(t, true, data.Get("ok").ToBool())
+			assert.Equal(t, true, data.Get("data", "checkedMd5").ToBool())
+		}
+		{
+			// 获取文件内容
+			req, err := http.NewRequest("GET", "http://127.0.0.1:12345/"+filepath.Base(file3), nil)
+			assert.Equal(t, nil, err)
+			req.Header.Set("x-module", "file")
+			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+			req.WithContext(ctx)
+			res, err := http.DefaultClient.Do(req)
+			assert.Equal(t, nil, err)
+			body, err := ioutil.ReadAll(res.Body)
+			assert.Equal(t, nil, err)
+			assert.Equal(t, file3Content, body)
+		}
+	}
+	{
+		// 删除文件，AllowDelete=false 不允许删除
+		req, err := http.NewRequest("DELETE", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
+		assert.Equal(t, nil, err)
+		req.Header.Set("x-module", "file")
+		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		req.WithContext(ctx)
+		res, err := http.DefaultClient.Do(req)
+		assert.Equal(t, nil, err)
+		body, err := ioutil.ReadAll(res.Body)
+		assert.Equal(t, nil, err)
+		data := jsoniter.Get(body)
+		assert.Equal(t, false, data.Get("ok").ToBool())
+		assert.Equal(t, "not allowed [DELETE] file", data.Get("error").ToString())
+	}
+	{
+		// 设置允许删除文件
+		s.moduleFile.AllowDelete = true
+		{
+			// 删除文件，成功
+			req, err := http.NewRequest("DELETE", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
+			assert.Equal(t, nil, err)
+			req.Header.Set("x-module", "file")
+			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+			req.WithContext(ctx)
+			res, err := http.DefaultClient.Do(req)
+			assert.Equal(t, nil, err)
+			body, err := ioutil.ReadAll(res.Body)
+			assert.Equal(t, nil, err)
+			data := jsoniter.Get(body)
+			assert.Equal(t, true, data.Get("ok").ToBool())
+			assert.Equal(t, true, data.Get("data", "success").ToBool())
+		}
+		{
+			// 获取文件内容，失败
+			req, err := http.NewRequest("GET", "http://127.0.0.1:12345/"+filepath.Base(file3), nil)
+			assert.Equal(t, nil, err)
+			req.Header.Set("x-module", "file")
+			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+			req.WithContext(ctx)
+			res, err := http.DefaultClient.Do(req)
+			assert.Equal(t, nil, err)
+			body, err := ioutil.ReadAll(res.Body)
+			assert.Equal(t, 404, res.StatusCode)
+			assert.Equal(t, nil, err)
+			data := jsoniter.Get(body)
+			assert.Equal(t, false, data.Get("ok").ToBool())
+		}
+	}
 	s.Close()
 }
 
@@ -208,4 +340,9 @@ func jsonStringify(data interface{}) string {
 		panic(err)
 	}
 	return string(b)
+}
+
+func getMd5(data []byte) string {
+	hash := md5.Sum(data)
+	return hex.EncodeToString(hash[:16])
 }

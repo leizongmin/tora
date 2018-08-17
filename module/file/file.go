@@ -56,7 +56,8 @@ func (m *ModuleFile) handleHead(w http.ResponseWriter, r *http.Request, f string
 func (m *ModuleFile) handleGet(w http.ResponseWriter, r *http.Request, f string) {
 	s, err := os.Stat(f)
 	if err != nil {
-		common.ResponseApiError(w, err.Error(), nil)
+		common.ResponseApiErrorWithStatusCode(w, 404, err.Error(), nil)
+		return
 	}
 	if s.IsDir() {
 		if m.AllowListDir {

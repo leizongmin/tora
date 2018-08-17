@@ -27,3 +27,7 @@ func ResponseApiOk(w http.ResponseWriter, data JSON) {
 func ResponseApiError(w http.ResponseWriter, error string, data JSON) {
 	ResponseJson(w, 500, JSON{"ok": false, "error": error, "data": data})
 }
+
+func ResponseApiErrorWithStatusCode(w http.ResponseWriter, statusCode int, error string, data JSON) {
+	ResponseJson(w, statusCode, JSON{"ok": false, "error": error, "data": data})
+}
