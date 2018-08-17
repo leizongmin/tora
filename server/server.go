@@ -4,14 +4,22 @@ import (
 	"fmt"
 	"github.com/leizongmin/tora/common"
 	"github.com/leizongmin/tora/module/file"
+	"github.com/sirupsen/logrus"
 	"net"
 	"net/http"
 	"path/filepath"
 	"strings"
 )
 
+// 当前版本号
+const Version = "1.0"
+
+// X-Powered-By响应头
+const PoweredBy = "tora/" + Version
+
 type Server struct {
 	Options           Options
+	log               *logrus.Logger
 	httpServer        *http.Server
 	enableModuleFile  bool
 	enableModuleShell bool
@@ -20,9 +28,10 @@ type Server struct {
 }
 
 type Options struct {
-	Addr        string          `json:"addr"`        // 监听地址，格式：指定端口=:12345 指定地址和端口=127.0.0.1:12345 监听unix-socket=/path/to/sock
-	Enable      []string        `json:"enable"`      // 开启的模块，可选：file, shell, log
-	FileOptions file.ModuleFile `json:"fileOptions"` // 文件服务的根目录，如果开启了file模块，需要设置此项
+	Log         *logrus.Logger  // 日志输出实例
+	Addr        string          // 监听地址，格式：指定端口=:12345 指定地址和端口=127.0.0.1:12345 监听unix-socket=/path/to/sock
+	Enable      []string        // 开启的模块，可选：file, shell, log
+	FileOptions file.ModuleFile // 文件服务的根目录，如果开启了file模块，需要设置此项
 }
 
 type FileOptions = file.ModuleFile
@@ -36,22 +45,15 @@ func NewServer(options Options) (*Server, error) {
 	}
 
 	s := &Server{}
+	s.log = options.Log
+	if s.log == nil {
+		s.log = logrus.New()
+		s.log.SetLevel(logrus.ErrorLevel)
+	}
 	s.httpServer = &http.Server{}
 	s.httpServer.Addr = options.Addr
 	s.httpServer.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-		w.Header().Set("x-powered-by", "tora/1.0")
-		module := strings.ToLower(r.Header.Get("x-module"))
-		switch module {
-		case "file":
-			s.handleModuleFile(w, r)
-		case "shell":
-			s.handleModuleShell(w, r)
-		case "log":
-			s.handleModuleLog(w, r)
-		default:
-			s.handleModuleError(w, r, module)
-		}
+		s.handleRequest(w, r)
 	})
 
 	if len(options.Enable) > 0 {
@@ -69,14 +71,14 @@ func NewServer(options Options) (*Server, error) {
 		}
 	}
 	if s.enableModuleFile {
-		if len(options.FileOptions.FileRoot) < 1 {
-			return nil, fmt.Errorf("missing option [FileRoot] when module type [file] is enable")
+		if len(options.FileOptions.Root) < 1 {
+			return nil, fmt.Errorf("missing option [Root] when module type [file] is enable")
 		}
-		root, err := filepath.Abs(options.FileOptions.FileRoot)
+		root, err := filepath.Abs(options.FileOptions.Root)
 		if err != nil {
 			return nil, err
 		}
-		options.FileOptions.FileRoot = root
+		options.FileOptions.Root = root
 		s.moduleFile = &options.FileOptions
 	}
 
@@ -97,11 +99,33 @@ func (s *Server) Start() error {
 	if err != nil {
 		return err
 	}
+	s.log.Infof("%s listening on %s", PoweredBy, s.httpServer.Addr)
 	return s.httpServer.Serve(l)
 }
 
 func (s *Server) Close() error {
+	s.log.Info("trying to close server...")
 	return s.httpServer.Close()
+}
+
+func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	w.Header().Set("x-powered-by", PoweredBy)
+	module := strings.ToLower(r.Header.Get("x-module"))
+
+	s.log.Infof("%s %s %s %s [%s]", r.Method, r.URL.String(), r.Proto, r.RemoteAddr, module)
+
+	switch module {
+	case "file":
+		s.handleModuleFile(w, r)
+	case "shell":
+		s.handleModuleShell(w, r)
+	case "log":
+		s.handleModuleLog(w, r)
+	default:
+		s.handleModuleError(w, r, module)
+	}
 }
 
 func (s *Server) handleModuleFile(w http.ResponseWriter, r *http.Request) {

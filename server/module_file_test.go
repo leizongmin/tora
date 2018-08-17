@@ -49,7 +49,7 @@ func TestModuleFile(t *testing.T) {
 		Addr:   ":12345",
 		Enable: []string{"file"},
 		FileOptions: FileOptions{
-			FileRoot: root,
+			Root: root,
 			//AllowListDir: true,
 			//AllowDelete:  true,
 			//AllowPut:     true,

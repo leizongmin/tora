@@ -14,14 +14,14 @@ import (
 )
 
 type ModuleFile struct {
-	FileRoot     string // 文件根目录
+	Root         string // 文件根目录
 	AllowPut     bool   // 允许上传文件
 	AllowDelete  bool   // 允许删除文件
 	AllowListDir bool   // 允许列出目录
 }
 
 func (m *ModuleFile) Handle(w http.ResponseWriter, r *http.Request) {
-	f, err := resolveFilePath(m.FileRoot, r.URL.Path)
+	f, err := resolveFilePath(m.Root, r.URL.Path)
 	if err != nil {
 		common.ResponseApiError(w, err.Error(), nil)
 	}
