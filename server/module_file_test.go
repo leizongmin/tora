@@ -53,6 +53,14 @@ func TestModuleFile(t *testing.T) {
 		FileOptions: FileOptions{
 			Root: root,
 		},
+		Auth: Auth{
+			Token: map[string]AuthItem{
+				"testtoken": {
+					Allow:   true,
+					Modules: []string{"file"},
+				},
+			},
+		},
 	})
 	if err != nil {
 		panic(err)
@@ -63,6 +71,7 @@ func TestModuleFile(t *testing.T) {
 		// 读取目录，AllowListDir=false 未允许列出目录文件
 		req, err := http.NewRequest("GET", "http://127.0.0.1:12345", nil)
 		assert.Equal(t, nil, err)
+		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		req.WithContext(ctx)
@@ -85,6 +94,7 @@ func TestModuleFile(t *testing.T) {
 		// 读取目录
 		req, err := http.NewRequest("GET", "http://127.0.0.1:12345", nil)
 		assert.Equal(t, nil, err)
+		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		req.WithContext(ctx)
@@ -109,6 +119,7 @@ func TestModuleFile(t *testing.T) {
 		// 获取文件内容
 		req, err := http.NewRequest("GET", "http://127.0.0.1:12345/"+filepath.Base(file1), nil)
 		assert.Equal(t, nil, err)
+		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		req.WithContext(ctx)
@@ -125,6 +136,7 @@ func TestModuleFile(t *testing.T) {
 		// 上传文件，AllowPut=false 未允许上传
 		req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
 		assert.Equal(t, nil, err)
+		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		req.WithContext(ctx)
@@ -142,6 +154,7 @@ func TestModuleFile(t *testing.T) {
 		// 上传文件
 		req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
 		assert.Equal(t, nil, err)
+		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		req.WithContext(ctx)
@@ -157,6 +170,7 @@ func TestModuleFile(t *testing.T) {
 		// 上传文件，增加 md5 校验，校验失败
 		req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
 		assert.Equal(t, nil, err)
+		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
 		req.Header.Set("x-content-md5", "is-must-bad")
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
@@ -173,6 +187,7 @@ func TestModuleFile(t *testing.T) {
 		// 上传文件，增加 md5 校验，校验成功
 		req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
 		assert.Equal(t, nil, err)
+		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
 		req.Header.Set("x-content-md5", strings.ToUpper(file3Md5))
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
@@ -192,6 +207,7 @@ func TestModuleFile(t *testing.T) {
 		{
 			req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
 			assert.Equal(t, nil, err)
+			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
 			req.Header.Set("x-content-md5", strings.ToUpper(file3Md5))
 			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
@@ -208,6 +224,7 @@ func TestModuleFile(t *testing.T) {
 			// 获取文件内容
 			req, err := http.NewRequest("GET", "http://127.0.0.1:12345/"+filepath.Base(file3), nil)
 			assert.Equal(t, nil, err)
+			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
 			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 			req.WithContext(ctx)
@@ -222,6 +239,7 @@ func TestModuleFile(t *testing.T) {
 		// 删除文件，AllowDelete=false 不允许删除
 		req, err := http.NewRequest("DELETE", "http://127.0.0.1:12345/"+filepath.Base(file3), nil)
 		assert.Equal(t, nil, err)
+		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		req.WithContext(ctx)
@@ -240,6 +258,7 @@ func TestModuleFile(t *testing.T) {
 			// 删除文件，成功
 			req, err := http.NewRequest("DELETE", "http://127.0.0.1:12345/"+filepath.Base(file3), nil)
 			assert.Equal(t, nil, err)
+			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
 			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 			req.WithContext(ctx)
@@ -255,6 +274,7 @@ func TestModuleFile(t *testing.T) {
 			// 获取文件内容，失败
 			req, err := http.NewRequest("GET", "http://127.0.0.1:12345/"+filepath.Base(file3), nil)
 			assert.Equal(t, nil, err)
+			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
 			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 			req.WithContext(ctx)
@@ -273,6 +293,7 @@ func TestModuleFile(t *testing.T) {
 			// 不存在
 			req, err := http.NewRequest("HEAD", "http://127.0.0.1:12345/abcd/efg", nil)
 			assert.Equal(t, nil, err)
+			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
 			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 			req.WithContext(ctx)
@@ -286,6 +307,7 @@ func TestModuleFile(t *testing.T) {
 			// 文件存在
 			req, err := http.NewRequest("HEAD", "http://127.0.0.1:12345/"+filepath.Base(file1), nil)
 			assert.Equal(t, nil, err)
+			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
 			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 			req.WithContext(ctx)
@@ -301,6 +323,7 @@ func TestModuleFile(t *testing.T) {
 			// 目录存在
 			req, err := http.NewRequest("HEAD", "http://127.0.0.1:12345", nil)
 			assert.Equal(t, nil, err)
+			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
 			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 			req.WithContext(ctx)
@@ -320,6 +343,7 @@ func TestModuleFile(t *testing.T) {
 			// 上传文件
 			req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+file4BaseName, bytes.NewReader(file4Content))
 			assert.Equal(t, nil, err)
+			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
 			req.Header.Set("x-content-md5", file4Md5)
 			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
@@ -341,6 +365,7 @@ func TestModuleFile(t *testing.T) {
 			// 获取文件内容
 			req, err := http.NewRequest("GET", "http://127.0.0.1:12345/"+file4BaseName, nil)
 			assert.Equal(t, nil, err)
+			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
 			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 			req.WithContext(ctx)
@@ -354,6 +379,7 @@ func TestModuleFile(t *testing.T) {
 			// 删除目录
 			req, err := http.NewRequest("DELETE", "http://127.0.0.1:12345/"+filepath.Dir(file4BaseName), nil)
 			assert.Equal(t, nil, err)
+			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
 			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 			req.WithContext(ctx)

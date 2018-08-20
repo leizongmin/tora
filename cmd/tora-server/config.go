@@ -65,7 +65,7 @@ func GetDefaultConfig() Config {
 			Token: make(map[string]ConfigAuthItem),
 		},
 	}
-	c.Auth.IP["127.0.0.1"] = ConfigAuthItem{Allow: true, Modules: []string{}}
+	c.Auth.IP["127.0.0.1"] = ConfigAuthItem{Allow: true, Modules: []string{"file", "shell", "log"}}
 	return c
 }
 

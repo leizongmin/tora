@@ -16,6 +16,9 @@ const Version = "1.0"
 // X-Powered-By响应头
 const PoweredBy = "tora/" + Version
 
+// 默认监听地址
+const DefaultListenAddr = ":12345"
+
 type Server struct {
 	Options           Options
 	log               *logrus.Logger
@@ -31,12 +34,27 @@ type Options struct {
 	Addr        string          // 监听地址，格式：指定端口=:12345 指定地址和端口=127.0.0.1:12345 监听unix-socket=/path/to/sock
 	Enable      []string        // 开启的模块，可选：file, shell, log
 	FileOptions file.ModuleFile // 文件服务的根目录，如果开启了file模块，需要设置此项
+	Auth        Auth            // 授权信息
 }
 
 type FileOptions = file.ModuleFile
 
-// 默认监听地址
-const DefaultListenAddr = ":12345"
+type Auth struct {
+	Token map[string]AuthItem // 允许指定token
+	IP    map[string]AuthItem // 允许指定ip
+}
+
+type AuthItem struct {
+	Allow   bool     // 是否允许访问
+	Modules []string // 允许访问的模块
+}
+
+type AuthInfo struct {
+	Type  string // 类型，如 token 或者 ip
+	Token string // 对应的 token
+	Ip    string // 对应的 ip
+	AuthItem
+}
 
 func NewServer(options Options) (*Server, error) {
 	if len(options.Addr) < 1 {
@@ -102,7 +120,6 @@ func (s *Server) Close() error {
 func (s *Server) handleRequest(ctx *web.Context) {
 	ctx.Res.Header().Set("x-powered-by", PoweredBy)
 	module := strings.ToLower(ctx.Req.Header.Get("x-module"))
-
 	ctx.Log = s.log.WithFields(logrus.Fields{
 		"remote": ctx.Req.RemoteAddr,
 		"method": ctx.Req.Method,
@@ -110,6 +127,22 @@ func (s *Server) handleRequest(ctx *web.Context) {
 		"module": module,
 	})
 
+	// 检查授权
+	auth, ok := s.checkAuth(ctx)
+	ctx.Log = ctx.Log.WithFields(logrus.Fields{
+		"auth-ok":      ok,
+		"auth-type":    auth.Type,
+		"auth-ip":      auth.Ip,
+		"auth-token":   desensitizeToken(auth.Token),
+		"auth-allow":   auth.Allow,
+		"auth-modules": strings.Join(auth.Modules, ","),
+	})
+	if !ok {
+		common.ResponseApiErrorWithStatusCode(ctx, 403, "permission denied", nil)
+		return
+	}
+
+	// 处理请求
 	switch module {
 	case "file":
 		s.handleModuleFile(ctx)
@@ -120,6 +153,43 @@ func (s *Server) handleRequest(ctx *web.Context) {
 	default:
 		s.handleModuleError(ctx, module)
 	}
+}
+
+func (s *Server) checkAuth(ctx *web.Context) (info AuthInfo, ok bool) {
+	token := ctx.Req.Header.Get("x-token")
+	ip := getIpFromAddr(ctx.Req.RemoteAddr)
+
+	info, ok = s.checkToken(ctx, token)
+	if ok {
+		return info, true
+	}
+
+	info, ok = s.checkIp(ctx, ip)
+	if ok {
+		return info, true
+	}
+
+	return info, false
+}
+
+func (s *Server) checkToken(ctx *web.Context, token string) (AuthInfo, bool) {
+	a, ok := s.Options.Auth.Token[token]
+	info := AuthInfo{Type: "token", Token: token}
+	if ok {
+		info.Allow = a.Allow
+		info.Modules = a.Modules
+	}
+	return info, ok
+}
+
+func (s *Server) checkIp(ctx *web.Context, ip string) (AuthInfo, bool) {
+	a, ok := s.Options.Auth.IP[ip]
+	info := AuthInfo{Type: "ip", Ip: ip}
+	if ok {
+		info.Allow = a.Allow
+		info.Modules = a.Modules
+	}
+	return info, ok
 }
 
 func (s *Server) handleModuleFile(ctx *web.Context) {
@@ -152,4 +222,29 @@ func (s *Server) handleModuleError(ctx *web.Context, name string) {
 		return
 	}
 	common.ResponseApiError(ctx, fmt.Sprintf("not supported module [%s]", name), nil)
+}
+
+func getIpFromAddr(addr string) string {
+	if strings.Contains(addr, "/") {
+		return addr
+	}
+	s := strings.Split(addr, ":")
+	return s[0]
+}
+
+func desensitizeToken(token string) string {
+	size := len(token)
+	if size == 0 {
+		return ""
+	}
+	if size == 1 {
+		return "*"
+	}
+	if size == 2 {
+		return token[0:1] + "*"
+	}
+	if size < 4 {
+		return token[0:2] + "****"
+	}
+	return token[0:2] + "****" + token[len(token)-2:]
 }

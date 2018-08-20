@@ -57,6 +57,10 @@ func main() {
 			AllowPut:     c.Module.File.AllowPut,
 			AllowListDir: c.Module.File.AllowListDir,
 		},
+		Auth: server.Auth{
+			Token: mapConfigAuthItemToServerAuthItem(c.Auth.Token),
+			IP:    mapConfigAuthItemToServerAuthItem(c.Auth.IP),
+		},
 	})
 	if err != nil {
 		log.Panicf("Try to start server failed: %s", err)
@@ -64,4 +68,18 @@ func main() {
 	if err := s.Start(); err != nil {
 		log.Error(err)
 	}
+}
+
+func mapConfigAuthItemToServerAuthItem(m map[string]ConfigAuthItem) (r map[string]server.AuthItem) {
+	if m == nil {
+		return r
+	}
+	r = make(map[string]server.AuthItem)
+	for k, v := range m {
+		r[k] = server.AuthItem{
+			Modules: v.Modules,
+			Allow:   v.Allow,
+		}
+	}
+	return r
 }
