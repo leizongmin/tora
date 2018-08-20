@@ -7,3 +7,9 @@ module:
   file:
     root: /Users/glen/work/tmp/test_tora
     allowPut: true
+
+auth:
+  token:
+    testtoken:
+      allow: true
+      modules: ["file"]

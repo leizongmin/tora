@@ -169,6 +169,8 @@ func (s *Server) checkAuth(ctx *web.Context) (info AuthInfo, ok bool) {
 		return info, true
 	}
 
+	info.Ip = ip
+	info.Token = token
 	return info, false
 }
 
