@@ -13,11 +13,13 @@ const DefaultConfigFilePath = "/etc/tora.yaml"
 func main() {
 
 	var configFile string
+	var init bool
 	log := logrus.New()
 
 	// 解析命令行参数
 	cmd := flag.NewFlagSet("tora-server", flag.ExitOnError)
 	cmd.StringVar(&configFile, "c", DefaultConfigFilePath, "set c file path")
+	cmd.BoolVar(&init, "init", false, "generate example config file")
 	cmd.Usage = func() {
 		fmt.Fprintf(os.Stderr, fmt.Sprintf("tora/%s\n", server.Version))
 		fmt.Fprintf(os.Stderr, "Usage: tora-server [-c filename]\n\n")
@@ -29,7 +31,16 @@ func main() {
 	// 读取配置文件
 	c, err := LoadConfigFile(configFile)
 	if err != nil {
-		log.Fatalf("Load c failed: %s", err)
+		if os.IsNotExist(err) && init {
+			c, err = CreateExampleConfigFile(configFile)
+			if err != nil {
+				log.Fatalf("Create config file failed: %s", err)
+			} else {
+				log.Warnf("Config file %s has been created", configFile)
+			}
+		} else {
+			log.Fatalf("Load config failed: %s", err)
+		}
 	}
 
 	// 设置日志记录器

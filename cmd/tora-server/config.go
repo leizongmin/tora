@@ -79,3 +79,13 @@ func LoadConfigFile(filename string) (Config, error) {
 	err = d.Decode(&c)
 	return c, err
 }
+
+func CreateExampleConfigFile(filename string) (Config, error) {
+	c := GetDefaultConfig()
+	b, err := yaml.Marshal(c)
+	if err != nil {
+		return c, err
+	}
+	err = ioutil.WriteFile(filename, b, 0666)
+	return c, err
+}
