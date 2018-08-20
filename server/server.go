@@ -84,6 +84,7 @@ func NewServer(options Options) (*Server, error) {
 		options.FileOptions.Log = s.log
 		options.FileOptions.Root = root
 		s.moduleFile = &options.FileOptions
+		s.log.Infof("enable module [file] root=%s", root)
 	}
 
 	return s, nil

@@ -1,3 +1,9 @@
 log:
   level: debug
 
+enable:
+  - file
+module:
+  file:
+    root: /Users/glen/work/tmp/test_tora
+    allowPut: true
