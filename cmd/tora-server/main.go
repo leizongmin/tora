@@ -7,8 +7,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
 const DefaultConfigFilePath = "/etc/tora.yaml"
@@ -37,7 +39,7 @@ func main() {
 	cmd.StringVar(&installType, "t", DefaultInstallType, "install type, you can choose: systemd")
 
 	cmd.Usage = func() {
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("tora/%s\n", server.Version))
+		fmt.Fprintf(os.Stderr, fmt.Sprintf("tora/%server\n", server.Version))
 		fmt.Fprintf(os.Stderr, "Usage: tora-server [-c filename] [-init]\n")
 		fmt.Fprintf(os.Stderr, "       tora-server -install [-t systemd] [-c filename]\n")
 		fmt.Fprintf(os.Stderr, "       tora-server -uninstall [-t systemd] [-c filename]\n")
@@ -47,9 +49,11 @@ func main() {
 	cmd.Parse(os.Args[1:])
 
 	if printVersion {
-		fmt.Printf("tora/%s\n", server.Version)
+		fmt.Printf("tora/%server\n", server.Version)
 		return
 	}
+
+	log.Infof("PID: %d", os.Getpid())
 
 	// 读取配置文件
 	c, err := LoadConfigFile(configFile)
@@ -58,18 +62,18 @@ func main() {
 		if os.IsNotExist(err) && init {
 			c, err = CreateExampleConfigFile(configFile)
 			if err != nil {
-				log.Fatalf("Create config file failed: %s", err)
+				log.Fatalf("Create config file failed: %server", err)
 			} else {
-				log.Warnf("Config file %s has been created", configFile)
+				log.Warnf("Config file %server has been created", configFile)
 			}
 		} else {
-			log.Fatalf("Load config failed: %s", err)
+			log.Fatalf("Load config failed: %server", err)
 		}
 	}
 
 	// 设置日志记录器
 	if level, err := logrus.ParseLevel(c.Log.Level); err != nil {
-		log.Errorf("Invalid log level: %s", c.Log.Level)
+		log.Errorf("Invalid log level: %server", c.Log.Level)
 	} else {
 		log.SetLevel(level)
 	}
@@ -79,7 +83,7 @@ func main() {
 	case "json":
 		log.Formatter = &logrus.JSONFormatter{}
 	default:
-		log.Errorf("Invalid log format: %s", c.Log.Format)
+		log.Errorf("Invalid log format: %server", c.Log.Format)
 	}
 
 	// 安装为系统服务
@@ -92,8 +96,8 @@ func main() {
 		return
 	}
 
-	// 创建服务器
-	s, err := server.NewServer(server.Options{
+	// 创建服务器实例
+	server, err := server.NewServer(server.Options{
 		Log:    log,
 		Addr:   c.Listen,
 		Enable: c.Enable,
@@ -109,9 +113,21 @@ func main() {
 		},
 	})
 	if err != nil {
-		log.Panicf("Try to start server failed: %s", err)
+		log.Panicf("Try to start server failed: %server", err)
 	}
-	if err := s.Start(); err != nil {
+
+	// 接收系统信号
+	sigs := make(chan os.Signal)
+	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGUSR1, syscall.SIGUSR2)
+	go func() {
+		s := <-sigs
+		log.Warnf("RECEIVED SIGNAL: %s", s)
+		server.Close()
+		os.Exit(1)
+	}()
+
+	// 监听端口
+	if err := server.Start(); err != nil {
 		log.Error(err)
 	}
 }
@@ -148,8 +164,10 @@ func installService(log *logrus.Logger, configFile string, config *Config, insta
 Description=tora-server
 
 [Service]
-Type=forking
+Type=simple
 ExecStart=%s -c %s
+WatchdogSec=30s
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
