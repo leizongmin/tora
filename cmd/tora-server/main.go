@@ -17,6 +17,7 @@ const SystemdServiceFilePath = "/lib/systemd/system/tora.service"
 
 func main() {
 
+	var printVersion bool
 	var configFile string
 	var init bool
 	var install bool
@@ -26,6 +27,7 @@ func main() {
 
 	// 解析命令行参数
 	cmd := flag.NewFlagSet("tora-server", flag.ExitOnError)
+	cmd.BoolVar(&printVersion, "v", false, "print printVersion info")
 
 	cmd.StringVar(&configFile, "c", DefaultConfigFilePath, "set c file path")
 	cmd.BoolVar(&init, "init", false, "generate example config file")
@@ -36,13 +38,18 @@ func main() {
 
 	cmd.Usage = func() {
 		fmt.Fprintf(os.Stderr, fmt.Sprintf("tora/%s\n", server.Version))
-		fmt.Fprintf(os.Stderr, "Usage: tora-server [-c filename] [-init]\n\n")
-		fmt.Fprintf(os.Stderr, "       tora-server -install [-t systemd] [-c filename]\n\n")
-		fmt.Fprintf(os.Stderr, "       tora-server -uninstall [-t systemd] [-c filename]\n\n")
+		fmt.Fprintf(os.Stderr, "Usage: tora-server [-c filename] [-init]\n")
+		fmt.Fprintf(os.Stderr, "       tora-server -install [-t systemd] [-c filename]\n")
+		fmt.Fprintf(os.Stderr, "       tora-server -uninstall [-t systemd] [-c filename]\n")
 		fmt.Fprintf(os.Stderr, "Options:\n")
 		cmd.PrintDefaults()
 	}
 	cmd.Parse(os.Args[1:])
+
+	if printVersion {
+		fmt.Printf("tora/%s\n", server.Version)
+		return
+	}
 
 	// 读取配置文件
 	c, err := LoadConfigFile(configFile)
