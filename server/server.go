@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"github.com/leizongmin/tora/common"
 	"github.com/leizongmin/tora/module/file"
+	"github.com/leizongmin/tora/web"
 	"github.com/sirupsen/logrus"
-	"net"
-	"net/http"
 	"path/filepath"
 	"strings"
 )
@@ -20,7 +19,7 @@ const PoweredBy = "tora/" + Version
 type Server struct {
 	Options           Options
 	log               *logrus.Logger
-	httpServer        *http.Server
+	httpServer        *web.Application
 	enableModuleFile  bool
 	enableModuleShell bool
 	enableModuleLog   bool
@@ -52,10 +51,9 @@ func NewServer(options Options) (*Server, error) {
 		s.log.SetLevel(logrus.ErrorLevel)
 	}
 
-	s.httpServer = &http.Server{}
-	s.httpServer.Addr = options.Addr
-	s.httpServer.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s.handleRequest(w, r)
+	s.httpServer = web.NewApplication()
+	s.httpServer.Use(func(ctx *web.Context) {
+		s.handleRequest(ctx)
 	})
 
 	if len(options.Enable) > 0 {
@@ -87,25 +85,13 @@ func NewServer(options Options) (*Server, error) {
 		s.log.Infof("enable module [file] root=%s", root)
 	}
 
+	s.Options = options
 	return s, nil
 }
 
 func (s *Server) Start() error {
-	var proto string
-	if s.httpServer.Addr == "" {
-		s.httpServer.Addr = ":http"
-	}
-	if strings.Contains(s.httpServer.Addr, "/") {
-		proto = "unix"
-	} else {
-		proto = "tcp"
-	}
-	l, err := net.Listen(proto, s.httpServer.Addr)
-	if err != nil {
-		return err
-	}
-	s.log.Infof("%s listening on %s", PoweredBy, s.httpServer.Addr)
-	return s.httpServer.Serve(l)
+	s.log.Infof("%s listening on %s", PoweredBy, s.Options.Addr)
+	return s.httpServer.Listen(s.Options.Addr)
 }
 
 func (s *Server) Close() error {
@@ -113,59 +99,57 @@ func (s *Server) Close() error {
 	return s.httpServer.Close()
 }
 
-func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+func (s *Server) handleRequest(ctx *web.Context) {
+	ctx.Res.Header().Set("x-powered-by", PoweredBy)
+	module := strings.ToLower(ctx.Req.Header.Get("x-module"))
 
-	w.Header().Set("x-powered-by", PoweredBy)
-	module := strings.ToLower(r.Header.Get("x-module"))
-
-	log := s.log.WithFields(logrus.Fields{
-		"remote": r.RemoteAddr,
-		"method": r.Method,
-		"url":    r.RequestURI,
+	ctx.Log = s.log.WithFields(logrus.Fields{
+		"remote": ctx.Req.RemoteAddr,
+		"method": ctx.Req.Method,
+		"url":    ctx.Req.RequestURI,
 		"module": module,
 	})
 
 	switch module {
 	case "file":
-		s.handleModuleFile(log, w, r)
+		s.handleModuleFile(ctx)
 	case "shell":
-		s.handleModuleShell(log, w, r)
+		s.handleModuleShell(ctx)
 	case "log":
-		s.handleModuleLog(log, w, r)
+		s.handleModuleLog(ctx)
 	default:
-		s.handleModuleError(log, w, r, module)
+		s.handleModuleError(ctx, module)
 	}
 }
 
-func (s *Server) handleModuleFile(log *logrus.Entry, w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleModuleFile(ctx *web.Context) {
 	if !s.enableModuleFile {
-		common.ResponseApiError(log, w, "currently not enable [file] module", nil)
+		common.ResponseApiError(ctx, "currently not enable [file] module", nil)
 		return
 	}
-	s.moduleFile.Handle(log, w, r)
+	s.moduleFile.Handle(ctx)
 }
 
-func (s *Server) handleModuleShell(log *logrus.Entry, w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleModuleShell(ctx *web.Context) {
 	if !s.enableModuleShell {
-		common.ResponseApiError(log, w, "currently not enable [shell] module", nil)
+		common.ResponseApiError(ctx, "currently not enable [shell] module", nil)
 		return
 	}
-	common.ResponseApiError(log, w, "currently not supported [shell] module", nil)
+	common.ResponseApiError(ctx, "currently not supported [shell] module", nil)
 }
 
-func (s *Server) handleModuleLog(log *logrus.Entry, w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleModuleLog(ctx *web.Context) {
 	if !s.enableModuleLog {
-		common.ResponseApiError(log, w, "currently not enable [log] module", nil)
+		common.ResponseApiError(ctx, "currently not enable [log] module", nil)
 		return
 	}
-	common.ResponseApiError(log, w, "currently not supported [log] module", nil)
+	common.ResponseApiError(ctx, "currently not supported [log] module", nil)
 }
 
-func (s *Server) handleModuleError(log *logrus.Entry, w http.ResponseWriter, r *http.Request, name string) {
+func (s *Server) handleModuleError(ctx *web.Context, name string) {
 	if name == "" {
-		common.ResponseApiError(log, w, "missing [x-module] header", nil)
+		common.ResponseApiError(ctx, "missing [x-module] header", nil)
 		return
 	}
-	common.ResponseApiError(log, w, fmt.Sprintf("not supported module [%s]", name), nil)
+	common.ResponseApiError(ctx, fmt.Sprintf("not supported module [%s]", name), nil)
 }

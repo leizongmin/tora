@@ -3,38 +3,37 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"net/http"
+	"github.com/leizongmin/tora/web"
 	"strings"
 )
 
-func ResponseJson(w http.ResponseWriter, statusCode int, data JSON) {
+func ResponseJson(ctx *web.Context, statusCode int, data JSON) {
 	b, err := json.Marshal(data)
 	if err != nil {
-		w.WriteHeader(500)
+		ctx.Res.WriteHeader(500)
 		msg := strings.Replace(err.Error(), "\"", "\\\"", -1)
-		w.Write([]byte(fmt.Sprintf("{\"ok\":false,\"error\":\"JSON stringify failed: %s\"", msg)))
+		ctx.Res.Write([]byte(fmt.Sprintf("{\"ok\":false,\"error\":\"JSON stringify failed: %s\"", msg)))
 		return
 	}
-	w.Header().Set("content-type", "application/json")
-	w.WriteHeader(statusCode)
-	w.Write(b)
+	ctx.Res.Header().Set("content-type", "application/json")
+	ctx.Res.WriteHeader(statusCode)
+	ctx.Res.Write(b)
 }
 
-func ResponseApiOk(log *logrus.Entry, w http.ResponseWriter, data JSON) {
+func ResponseApiOk(ctx *web.Context, data JSON) {
 	d := JSON{"ok": true, "data": data}
-	log.Info("OK")
-	ResponseJson(w, 200, d)
+	ctx.Log.Info("OK")
+	ResponseJson(ctx, 200, d)
 }
 
-func ResponseApiError(log *logrus.Entry, w http.ResponseWriter, err string, data JSON) {
-	d := JSON{"ok": false, "err": err, "data": data}
-	log.WithField("err", err).Warn("Error")
-	ResponseJson(w, 500, d)
+func ResponseApiError(ctx *web.Context, err string, data JSON) {
+	d := JSON{"ok": false, "error": err, "data": data}
+	ctx.Log.WithField("error", err).Warn("Error")
+	ResponseJson(ctx, 500, d)
 }
 
-func ResponseApiErrorWithStatusCode(log *logrus.Entry, w http.ResponseWriter, statusCode int, err string, data JSON) {
-	d := JSON{"ok": false, "err": err, "data": data}
-	log.WithField("err", err).Warn("Error")
-	ResponseJson(w, statusCode, d)
+func ResponseApiErrorWithStatusCode(ctx *web.Context, statusCode int, err string, data JSON) {
+	d := JSON{"ok": false, "error": err, "data": data}
+	ctx.Log.WithField("error", err).Warn("Error")
+	ResponseJson(ctx, statusCode, d)
 }
