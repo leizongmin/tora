@@ -14,6 +14,12 @@ import (
 	"time"
 )
 
+// 默认创建目录权限
+const DefaultDirPerm = 0775
+
+// 默认创建文件权限
+const DefaultFilePerm = 0664
+
 type ModuleFile struct {
 	Log          *logrus.Logger // 日志模块
 	Root         string         // 文件根目录
@@ -87,7 +93,7 @@ func (m *ModuleFile) handlePut(ctx *web.Context, f string) {
 	tmpFile := filepath.Join(dir, fmt.Sprintf(".%s.%d-%d", filepath.Base(f), time.Now().Unix(), rand.Uint32()))
 
 	// 先保证目录存在
-	if err := os.MkdirAll(dir, 0766); err != nil {
+	if err := os.MkdirAll(dir, DefaultDirPerm); err != nil {
 		common.ResponseApiError(ctx, err.Error(), nil)
 		return
 	}
@@ -127,6 +133,13 @@ func (m *ModuleFile) handlePut(ctx *web.Context, f string) {
 		return
 	}
 	err = os.Rename(tmpFile, f)
+	if err != nil {
+		common.ResponseApiError(ctx, err.Error(), nil)
+		return
+	}
+
+	// 更改文件权限
+	err = os.Chmod(f, DefaultFilePerm)
 	if err != nil {
 		common.ResponseApiError(ctx, err.Error(), nil)
 		return
