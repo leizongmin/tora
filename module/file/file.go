@@ -15,10 +15,10 @@ import (
 )
 
 // 默认创建目录权限
-const DefaultDirPerm = 0775
+const DefaultDirPerm = 0777
 
 // 默认创建文件权限
-const DefaultFilePerm = 0664
+const DefaultFilePerm = 0666
 
 type ModuleFile struct {
 	Log          *logrus.Logger // 日志模块
@@ -26,6 +26,8 @@ type ModuleFile struct {
 	AllowPut     bool           // 允许上传文件
 	AllowDelete  bool           // 允许删除文件
 	AllowListDir bool           // 允许列出目录
+	DirPerm      os.FileMode    // 创建的目录权限
+	FilePerm     os.FileMode    // 创建的文件权限
 }
 
 func (m *ModuleFile) Handle(ctx *web.Context) {
@@ -93,7 +95,7 @@ func (m *ModuleFile) handlePut(ctx *web.Context, f string) {
 	tmpFile := filepath.Join(dir, fmt.Sprintf(".%s.%d-%d", filepath.Base(f), time.Now().Unix(), rand.Uint32()))
 
 	// 先保证目录存在
-	if err := os.MkdirAll(dir, DefaultDirPerm); err != nil {
+	if err := os.MkdirAll(dir, m.DirPerm); err != nil {
 		common.ResponseApiError(ctx, err.Error(), nil)
 		return
 	}
@@ -139,7 +141,7 @@ func (m *ModuleFile) handlePut(ctx *web.Context, f string) {
 	}
 
 	// 更改文件权限
-	err = os.Chmod(f, DefaultFilePerm)
+	err = os.Chmod(f, m.FilePerm)
 	if err != nil {
 		common.ResponseApiError(ctx, err.Error(), nil)
 		return

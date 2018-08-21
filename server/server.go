@@ -100,7 +100,13 @@ func NewServer(options Options) (*Server, error) {
 		options.FileOptions.Log = s.log
 		options.FileOptions.Root = root
 		s.moduleFile = &options.FileOptions
-		s.log.Infof("enable module [file] root=%s", root)
+		if !(options.FileOptions.DirPerm > 0) {
+			options.FileOptions.DirPerm = file.DefaultDirPerm
+		}
+		if !(options.FileOptions.FilePerm > 0) {
+			options.FileOptions.FilePerm = file.DefaultFilePerm
+		}
+		s.log.Infof("enable module [file] root=%s perm=[dir:%d, file:%d]", root, options.FileOptions.DirPerm, options.FileOptions.FilePerm)
 	}
 
 	s.Options = options

@@ -2,9 +2,11 @@ package main
 
 import (
 	"bytes"
+	"github.com/leizongmin/tora/module/file"
 	"github.com/leizongmin/tora/server"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"os"
 )
 
 type Config struct {
@@ -37,10 +39,12 @@ type ConfigModule struct {
 }
 
 type ConfigModuleFile struct {
-	Root         string `yaml:"root"`         // 根目录
-	AllowPut     bool   `yaml:"allowPut"`     // 允许上传文件
-	AllowDelete  bool   `yaml:"allowDelete"`  // 允许删除文件
-	AllowListDir bool   `yaml:"allowListDir"` // 允许列出目录
+	Root         string      `yaml:"root"`         // 根目录
+	AllowPut     bool        `yaml:"allowPut"`     // 允许上传文件
+	AllowDelete  bool        `yaml:"allowDelete"`  // 允许删除文件
+	AllowListDir bool        `yaml:"allowListDir"` // 允许列出目录
+	DirPerm      os.FileMode `yaml:"dirPerm"`      // 创建的目录权限
+	FilePerm     os.FileMode `yaml:"filePerm"`     // 创建的文件权限
 }
 
 type ConfigModuleShell struct{}
@@ -56,7 +60,11 @@ func GetDefaultConfig() Config {
 		},
 		Enable: []string{},
 		Module: ConfigModule{
-			File:  ConfigModuleFile{},
+			File: ConfigModuleFile{
+				AllowPut: true,
+				DirPerm:  file.DefaultDirPerm,
+				FilePerm: file.DefaultFilePerm,
+			},
 			Shell: ConfigModuleShell{},
 			Log:   ConfigModuleLog{},
 		},
