@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -25,6 +26,7 @@ func main() {
 	var install bool
 	var uninstall bool
 	var installType string
+	var username string
 	log := logrus.New()
 
 	// 解析命令行参数
@@ -34,9 +36,15 @@ func main() {
 	cmd.StringVar(&configFile, "c", DefaultConfigFilePath, "set c file path")
 	cmd.BoolVar(&init, "init", false, "generate example config file")
 
+	userInfo, err := user.Current()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	username = userInfo.Username
 	cmd.BoolVar(&install, "install", false, "install system service")
 	cmd.BoolVar(&uninstall, "uninstall", false, "uninstall system service")
 	cmd.StringVar(&installType, "t", DefaultInstallType, "install type, you can choose: systemd")
+	cmd.StringVar(&username, "u", userInfo.Username, "service run as specified user")
 
 	cmd.Usage = func() {
 		fmt.Fprintf(os.Stderr, fmt.Sprintf("tora/%server\n", server.Version))
@@ -88,7 +96,7 @@ func main() {
 
 	// 安装为系统服务
 	if install {
-		installService(log, configFile, &c, installType)
+		installService(log, configFile, &c, installType, username)
 		return
 	}
 	if uninstall {
@@ -146,7 +154,7 @@ func mapConfigAuthItemToServerAuthItem(m map[string]ConfigAuthItem) (r map[strin
 	return r
 }
 
-func installService(log *logrus.Logger, configFile string, config *Config, installType string) {
+func installService(log *logrus.Logger, configFile string, config *Config, installType string, username string) {
 	if installType != "systemd" {
 		log.Fatalf("Unsupported service install type: %s", installType)
 	}
@@ -168,11 +176,13 @@ Type=simple
 ExecStart=%s -c %s
 WatchdogSec=30s
 Restart=on-failure
+User=%s
+Group=%s
 
 [Install]
 WantedBy=multi-user.target
 	`)
-	code := fmt.Sprintf(tpl, execPath, configFile)
+	code := fmt.Sprintf(tpl, execPath, configFile, username, username)
 	err = ioutil.WriteFile(SystemdServiceFilePath, []byte(code), 0644)
 	if err != nil {
 		log.Fatalln(err)
