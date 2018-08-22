@@ -16,7 +16,7 @@ tora-server -c config.yaml -init
 
 ```bash
 # 安装为系统服务（systemd）
-tora-server -install -c config.yaml
+tora-server -install -c config.yaml -u user
 
 # 删除已安装的系统服务（systemd）
 tora-server -uninstall
