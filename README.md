@@ -30,6 +30,47 @@ sudo systemctl start tora.service
 sudo systemctl stop tora.service
 ```
 
+## 配置文件格式
+
+默认配置文件位置：`/etc/tora.yaml`，格式：
+
+```yaml
+# 日志相关配置
+log:
+  # 显示日志等级，可选：debug, info, warn, error, fatal, panic
+  level: debug
+
+# 要开启的模块，可选：file, shell, log
+enable:
+  - file
+# 相应模块的配置
+module:
+  # file 模块的配置
+  file:
+    # 文件根目录
+    root: ./files
+    # 允许上传文件
+    allowPut: true
+    # 允许删除文件
+    allowDelete: true
+    # 允许列出目录文件
+    allowListDir: true
+    # 创建目录的权限
+    DirPerm: 0777
+    # 创建文件的权限
+    FilePerm: 0666
+
+# 授权相关，包括：token（基于token验证），ip（基于IP白名单验证）
+auth:
+  token:
+    # token=testtoken的权限说明
+    testtoken:
+      # 是否允许访问
+      allow: true
+      # 允许访问的模块列表
+      modules: ["file"]
+```
+
 ## 编译
 
 需要安装 go1.11 或更高版本
