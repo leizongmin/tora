@@ -32,7 +32,7 @@ func main() {
 		printUsage(cmd)
 	}
 	var options baseOptions
-	cmd.StringVar(&options.server, "s", server.DefaultListenAddr, "Remote server address")
+	cmd.StringVar(&options.server, "s", "http://127.0.0.1"+server.DefaultListenAddr, "Remote server address")
 	cmd.StringVar(&options.token, "t", "", "Auth token")
 
 	switch cmdType {
@@ -53,11 +53,10 @@ func main() {
 func printUsage(cmd *flag.FlagSet) {
 	fmt.Fprintf(os.Stderr, "%s/%s for %s\n\n", CmdName, server.Version, runtime.GOOS)
 	fmt.Fprintf(os.Stderr, "Usage: \n")
-	fmt.Fprintf(os.Stderr, "    %s [-s server] [-t token]", CmdName)
-	fmt.Fprintf(os.Stderr, "    command:\n")
-	fmt.Fprintf(os.Stderr, "        put <path>              Put file or directory to remote server\n")
-	fmt.Fprintf(os.Stderr, "        delete <path>           Delete file or directory from remote server\n")
-	fmt.Fprintf(os.Stderr, "        get <path>              Get file from remote server\n")
+	fmt.Fprintf(os.Stderr, "    %s [-s server] [-t token]\n", CmdName)
+	fmt.Fprintf(os.Stderr, "        put <remotePath> <localPath>      Put file or directory to remote server\n")
+	fmt.Fprintf(os.Stderr, "        delete <remotePath>               Delete file or directory from remote server\n")
+	fmt.Fprintf(os.Stderr, "        get <remotePath>                  Get file from remote server\n")
 	if cmd != nil {
 		fmt.Fprintf(os.Stderr, "\nOptions:\n")
 		cmd.PrintDefaults()
