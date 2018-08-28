@@ -57,7 +57,7 @@ func main() {
 	cmd.Parse(os.Args[1:])
 
 	if printVersion {
-		fmt.Printf("tora/%server\n", server.Version)
+		fmt.Printf("tora-server/%s\n", server.Version)
 		return
 	}
 

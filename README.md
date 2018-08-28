@@ -28,6 +28,16 @@ sudo systemctl start tora.service
 sudo systemctl stop tora.service
 ```
 
+## 编译
+
+需要安装 go1.11 或更高版本
+
+```bash
+./build.sh
+```
+
+构建完毕后在`./release`目录获取二进制可执行文件。
+
 ## License
 
 GPLv3
