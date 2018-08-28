@@ -14,7 +14,6 @@ const SystemdServiceFilePath = "/lib/systemd/system/tora.service"
 const CmdName = "tora-server"
 
 func main() {
-
 	// 获取子命令
 	var cmdType string
 	var args []string
@@ -51,13 +50,14 @@ func main() {
 }
 
 func printUsage(cmd *flag.FlagSet) {
-	fmt.Fprintf(os.Stderr, fmt.Sprintf("tora-server/%s for %s\n\n", server.Version, runtime.GOOS))
-	fmt.Fprintf(os.Stderr, "Usage: tora-server start [-c filename]                      Start service\n")
-	fmt.Fprintf(os.Stderr, "       tora-server version                                  Print version info\n")
-	fmt.Fprintf(os.Stderr, "       tora-server install [-t systemd] [-c filename]       Install service\n")
-	fmt.Fprintf(os.Stderr, "       tora-server uninstall [-t systemd] [-c filename]     Uninstall service\n")
-	fmt.Fprintf(os.Stderr, "       tora-server init [-c filename]                       Create example config file\n")
-	fmt.Fprintf(os.Stderr, "       tora-server help                                     Print usage\n")
+	fmt.Fprintf(os.Stderr, "%s/%s for %s\n\n", CmdName, server.Version, runtime.GOOS)
+	fmt.Fprintf(os.Stderr, "Usage: \n")
+	fmt.Fprintf(os.Stderr, "    %s start [-c filename]                      Start service\n", CmdName)
+	fmt.Fprintf(os.Stderr, "    %s version                                  Print version info\n", CmdName)
+	fmt.Fprintf(os.Stderr, "    %s install [-t systemd] [-c filename]       Install service\n", CmdName)
+	fmt.Fprintf(os.Stderr, "    %s uninstall [-t systemd] [-c filename]     Uninstall service\n", CmdName)
+	fmt.Fprintf(os.Stderr, "    %s init [-c filename]                       Create example config file\n", CmdName)
+	fmt.Fprintf(os.Stderr, "    %s help                                     Print usage\n", CmdName)
 	if cmd != nil {
 		fmt.Fprintf(os.Stderr, "\nOptions:\n")
 		cmd.PrintDefaults()
