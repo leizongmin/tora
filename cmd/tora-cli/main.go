@@ -56,7 +56,7 @@ func printUsage(cmd *flag.FlagSet) {
 	fmt.Fprintf(os.Stderr, "    %s [-s server] [-t token]\n", CmdName)
 	fmt.Fprintf(os.Stderr, "        put <remotePath> <localPath>      Put file or directory to remote server\n")
 	fmt.Fprintf(os.Stderr, "        delete <remotePath>               Delete file or directory from remote server\n")
-	fmt.Fprintf(os.Stderr, "        get <remotePath>                  Get file from remote server\n")
+	fmt.Fprintf(os.Stderr, "        get <remotePath> [localPath]      Get file from remote server\n")
 	if cmd != nil {
 		fmt.Fprintf(os.Stderr, "\nOptions:\n")
 		cmd.PrintDefaults()

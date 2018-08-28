@@ -18,12 +18,7 @@ func cmdPut(args []string, cmd *flag.FlagSet, options baseOptions) {
 	if len(remotePath) < 1 {
 		fmt.Println("Missing first argument <remotePath>")
 	}
-	if remotePath[0:1] != "/" {
-		remotePath = "/" + remotePath
-	}
-	if remotePath[len(remotePath)-1:] == "/" {
-		remotePath = remotePath[0 : len(remotePath)-1]
-	}
+	remotePath = formatRemotePath(remotePath)
 	fmt.Println("Remote Path:", remotePath)
 
 	localPath := cmd.Arg(1)
@@ -31,11 +26,7 @@ func cmdPut(args []string, cmd *flag.FlagSet, options baseOptions) {
 		fmt.Println("Missing second argument <localPath>")
 		os.Exit(1)
 	}
-	localPath, err := filepath.Abs(localPath)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	localPath = formatLocalPath(localPath)
 	fmt.Println("Local Path: ", localPath)
 
 	client := NewClient(options.server, options.token)
@@ -119,4 +110,23 @@ func getFileMd5(filePath string) (string, error) {
 	hashInBytes := hash.Sum(nil)[:16]
 	returnMD5String = hex.EncodeToString(hashInBytes)
 	return returnMD5String, nil
+}
+
+func formatRemotePath(remotePath string) string {
+	if remotePath[0:1] != "/" {
+		remotePath = "/" + remotePath
+	}
+	if remotePath[len(remotePath)-1:] == "/" {
+		remotePath = remotePath[0 : len(remotePath)-1]
+	}
+	return remotePath
+}
+
+func formatLocalPath(localPath string) string {
+	localPath, err := filepath.Abs(localPath)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	return localPath
 }

@@ -31,8 +31,16 @@ func (c *Client) request(module string, method string, url string, body io.Reade
 	return req, nil
 }
 
-func (c *Client) ResponseBytes(req *http.Request) (*http.Response, []byte, error) {
+func (c *Client) Response(req *http.Request) (*http.Response, error) {
 	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return res, err
+	}
+	return res, err
+}
+
+func (c *Client) ResponseBytes(req *http.Request) (*http.Response, []byte, error) {
+	res, err := c.Response(req)
 	if err != nil {
 		return res, nil, err
 	}
@@ -48,8 +56,12 @@ func (c *Client) ResponseJson(req *http.Request) (*http.Response, jsoniter.Any, 
 	if err != nil {
 		return res, nil, err
 	}
-	data := jsoniter.Get(body)
+	data := c.BytesToJson(body)
 	return res, data, err
+}
+
+func (c *Client) BytesToJson(body []byte) jsoniter.Any {
+	return jsoniter.Get(body)
 }
 
 func (c *Client) Get(module string, url string) (*http.Request, error) {
