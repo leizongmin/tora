@@ -7,6 +7,8 @@ module:
   file:
     root: /Users/glen/work/tmp/test_tora
     allowPut: true
+    allowListDir: true
+    allowDelete: true
 
 auth:
   token:

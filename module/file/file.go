@@ -159,6 +159,7 @@ func (m *ModuleFile) handleDelete(ctx *web.Context, f string) {
 	s, err := os.Stat(f)
 	if err != nil {
 		common.ResponseApiError(ctx, err.Error(), nil)
+		return
 	}
 	if s.IsDir() {
 		m.responseDeleteDir(ctx, f, s)
