@@ -54,7 +54,7 @@ func cmdGet(args []string, cmd *flag.FlagSet, options baseOptions) {
 		}
 		fmt.Println()
 		fmt.Println()
-		fmt.Println(string(body))
+		fmt.Println(jsonPretty(body))
 	}
 }
 

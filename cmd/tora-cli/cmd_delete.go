@@ -31,5 +31,5 @@ func cmdDelete(args []string, cmd *flag.FlagSet, options baseOptions) {
 
 	fmt.Println()
 	fmt.Println()
-	fmt.Println(string(data))
+	fmt.Println(jsonPretty(data))
 }

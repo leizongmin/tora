@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"github.com/TylerBrock/colorjson"
+	"github.com/json-iterator/go"
 	"io"
 	"io/ioutil"
 	"os"
@@ -129,4 +131,14 @@ func formatLocalPath(localPath string) string {
 		os.Exit(1)
 	}
 	return localPath
+}
+
+func jsonPretty(data []byte) string {
+	f := colorjson.NewFormatter()
+	f.Indent = 2
+	b, err := f.Marshal(jsoniter.Get(data).GetInterface())
+	if err != nil {
+		return err.Error()
+	}
+	return string(b)
 }
