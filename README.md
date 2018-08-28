@@ -40,6 +40,9 @@ sudo systemctl stop tora.service
 
 构建完毕后在`./release`目录获取二进制可执行文件。
 
+或者通过 [Releases](https://github.com/leizongmin/tora/releases) 链接下载已编译好的程序。
+
+
 ## License
 
 GPLv3
