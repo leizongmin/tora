@@ -2,6 +2,8 @@
 
 运维部署系统，包括文件传输、命令执行、日志监控等模块
 
+- Node.js 客户端模块：[@leizm/tora](https://github.com/leizongmin/tora-nodejs)
+
 ## 使用方法
 
 ```bash
