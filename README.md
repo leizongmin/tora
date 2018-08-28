@@ -8,20 +8,20 @@
 
 ```bash
 # 单独启动服务
-tora-server -c config.yaml
+tora-server start -c config.yaml
 
-# 单独启动服务，如果配置文件不存在，则创建默认配置文件
-tora-server -c config.yaml -init
+# 创建默认配置文件
+tora-server init -c config.yaml
 ```
 
 安装为 systemd 服务：
 
 ```bash
 # 安装为系统服务（systemd）
-sudo tora-server -install -c config.yaml -u user
+sudo tora-server install -c config.yaml -u user
 
 # 删除已安装的系统服务（systemd）
-sudo tora-server -uninstall
+sudo tora-server uninstall
 
 # 启动服务
 sudo systemctl start tora.service
