@@ -177,10 +177,12 @@ func (m *ModuleFile) responseDirList(ctx *web.Context, f string, s os.FileInfo) 
 	for i, v := range list {
 		list2[i] = common.JSON{
 			"name":         v.Name(),
+			"isDir":        v.IsDir(),
 			"size":         v.Size(),
 			"modifiedTime": v.ModTime().String(),
 		}
 	}
+	ctx.Res.Header().Set("x-file-type", "dir")
 	common.ResponseApiOk(ctx, common.JSON{
 		"name":  s.Name(),
 		"isDir": true,
@@ -189,6 +191,7 @@ func (m *ModuleFile) responseDirList(ctx *web.Context, f string, s os.FileInfo) 
 }
 
 func (m *ModuleFile) responseDirInfo(ctx *web.Context, f string, s os.FileInfo) {
+	ctx.Res.Header().Set("x-file-type", "dir")
 	common.ResponseApiOk(ctx, common.JSON{
 		"name":  s.Name(),
 		"isDir": true,
@@ -203,6 +206,7 @@ func (m *ModuleFile) responseFileContent(ctx *web.Context, f string, s os.FileIn
 		return
 	}
 	defer r.Close()
+	ctx.Res.Header().Set("x-file-type", "file")
 	ctx.Res.Header().Set("content-type", "application/octet-stream")
 	ctx.Res.Header().Set("x-file-size", string(s.Size()))
 	ctx.Res.Header().Set("x-last-modified", s.ModTime().UTC().String())

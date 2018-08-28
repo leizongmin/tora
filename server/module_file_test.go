@@ -77,6 +77,7 @@ func TestModuleFile(t *testing.T) {
 		req.WithContext(ctx)
 		res, err := http.DefaultClient.Do(req)
 		assert.Equal(t, nil, err)
+		assert.Equal(t, "dir", res.Header.Get("x-file-type"))
 		body, err := ioutil.ReadAll(res.Body)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, jsonStringify(JSON{
@@ -100,6 +101,7 @@ func TestModuleFile(t *testing.T) {
 		req.WithContext(ctx)
 		res, err := http.DefaultClient.Do(req)
 		assert.Equal(t, nil, err)
+		assert.Equal(t, "dir", res.Header.Get("x-file-type"))
 		body, err := ioutil.ReadAll(res.Body)
 		assert.Equal(t, nil, err)
 		data := jsoniter.Get(body)
@@ -125,6 +127,7 @@ func TestModuleFile(t *testing.T) {
 		req.WithContext(ctx)
 		res, err := http.DefaultClient.Do(req)
 		assert.Equal(t, nil, err)
+		assert.Equal(t, "file", res.Header.Get("x-file-type"))
 		body, err := ioutil.ReadAll(res.Body)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, file1Content, body)
