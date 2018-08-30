@@ -10,8 +10,9 @@ import (
 )
 
 func TestNewServer(t *testing.T) {
+	addr, url := getRandomPort()
 	s, err := NewServer(Options{
-		Addr: ":12345",
+		Addr: addr,
 		Auth: Auth{
 			Token: map[string]AuthItem{
 				"testtoken": {
@@ -27,7 +28,7 @@ func TestNewServer(t *testing.T) {
 	time.Sleep(time.Second)
 
 	{
-		req, err := http.NewRequest("GET", "http://127.0.0.1:12345", nil)
+		req, err := http.NewRequest("GET", url, nil)
 		assert.Equal(t, nil, err)
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		req.WithContext(ctx)
@@ -42,7 +43,7 @@ func TestNewServer(t *testing.T) {
 		}), string(body))
 	}
 	{
-		req, err := http.NewRequest("GET", "http://127.0.0.1:12345", nil)
+		req, err := http.NewRequest("GET", url, nil)
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-token", "bad")
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
@@ -58,7 +59,7 @@ func TestNewServer(t *testing.T) {
 		}), string(body))
 	}
 	{
-		req, err := http.NewRequest("GET", "http://127.0.0.1:12345", nil)
+		req, err := http.NewRequest("GET", url, nil)
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-token", "testtoken")
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
@@ -74,7 +75,7 @@ func TestNewServer(t *testing.T) {
 		}), string(body))
 	}
 	{
-		req, err := http.NewRequest("GET", "http://127.0.0.1:12345", nil)
+		req, err := http.NewRequest("GET", url, nil)
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "hello")
@@ -91,7 +92,7 @@ func TestNewServer(t *testing.T) {
 		}), string(body))
 	}
 	{
-		req, err := http.NewRequest("GET", "http://127.0.0.1:12345", nil)
+		req, err := http.NewRequest("GET", url, nil)
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")

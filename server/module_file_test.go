@@ -46,9 +46,10 @@ func TestModuleFile(t *testing.T) {
 		}
 	}
 
+	addr, url := getRandomPort()
 	s, err := NewServer(Options{
 		Log:    logrus.New(),
-		Addr:   ":12345",
+		Addr:   addr,
 		Enable: []string{"file"},
 		FileOptions: FileOptions{
 			Root: root,
@@ -69,7 +70,7 @@ func TestModuleFile(t *testing.T) {
 	time.Sleep(time.Second)
 	{
 		// 读取目录，AllowListDir=false 未允许列出目录文件
-		req, err := http.NewRequest("GET", "http://127.0.0.1:12345", nil)
+		req, err := http.NewRequest("GET", url, nil)
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
@@ -93,7 +94,7 @@ func TestModuleFile(t *testing.T) {
 		// 设置允许列出目录文件
 		s.moduleFile.AllowListDir = true
 		// 读取目录
-		req, err := http.NewRequest("GET", "http://127.0.0.1:12345", nil)
+		req, err := http.NewRequest("GET", url, nil)
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
@@ -119,7 +120,7 @@ func TestModuleFile(t *testing.T) {
 	}
 	{
 		// 获取文件内容
-		req, err := http.NewRequest("GET", "http://127.0.0.1:12345/"+filepath.Base(file1), nil)
+		req, err := http.NewRequest("GET", url+"/"+filepath.Base(file1), nil)
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
@@ -137,7 +138,7 @@ func TestModuleFile(t *testing.T) {
 	file3Md5 := getMd5(file3Content)
 	{
 		// 上传文件，AllowPut=false 未允许上传
-		req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
+		req, err := http.NewRequest("PUT", url+"/"+filepath.Base(file3), bytes.NewReader(file3Content))
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
@@ -155,7 +156,7 @@ func TestModuleFile(t *testing.T) {
 		// 设置允许上传文件
 		s.moduleFile.AllowPut = true
 		// 上传文件
-		req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
+		req, err := http.NewRequest("PUT", url+"/"+filepath.Base(file3), bytes.NewReader(file3Content))
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
@@ -171,7 +172,7 @@ func TestModuleFile(t *testing.T) {
 	}
 	{
 		// 上传文件，增加 md5 校验，校验失败
-		req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
+		req, err := http.NewRequest("PUT", url+"/"+filepath.Base(file3), bytes.NewReader(file3Content))
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
@@ -188,7 +189,7 @@ func TestModuleFile(t *testing.T) {
 	}
 	{
 		// 上传文件，增加 md5 校验，校验成功
-		req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
+		req, err := http.NewRequest("PUT", url+"/"+filepath.Base(file3), bytes.NewReader(file3Content))
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
@@ -208,7 +209,7 @@ func TestModuleFile(t *testing.T) {
 		file3Content = []byte(fmt.Sprintf("%s%d", file3Content, rand.Uint32()))
 		file3Md5 = getMd5(file3Content)
 		{
-			req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+filepath.Base(file3), bytes.NewReader(file3Content))
+			req, err := http.NewRequest("PUT", url+"/"+filepath.Base(file3), bytes.NewReader(file3Content))
 			assert.Equal(t, nil, err)
 			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
@@ -225,7 +226,7 @@ func TestModuleFile(t *testing.T) {
 		}
 		{
 			// 获取文件内容
-			req, err := http.NewRequest("GET", "http://127.0.0.1:12345/"+filepath.Base(file3), nil)
+			req, err := http.NewRequest("GET", url+"/"+filepath.Base(file3), nil)
 			assert.Equal(t, nil, err)
 			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
@@ -240,7 +241,7 @@ func TestModuleFile(t *testing.T) {
 	}
 	{
 		// 删除文件，AllowDelete=false 不允许删除
-		req, err := http.NewRequest("DELETE", "http://127.0.0.1:12345/"+filepath.Base(file3), nil)
+		req, err := http.NewRequest("DELETE", url+"/"+filepath.Base(file3), nil)
 		assert.Equal(t, nil, err)
 		req.Header.Set("x-token", "testtoken")
 		req.Header.Set("x-module", "file")
@@ -259,7 +260,7 @@ func TestModuleFile(t *testing.T) {
 		s.moduleFile.AllowDelete = true
 		{
 			// 删除文件，成功
-			req, err := http.NewRequest("DELETE", "http://127.0.0.1:12345/"+filepath.Base(file3), nil)
+			req, err := http.NewRequest("DELETE", url+"/"+filepath.Base(file3), nil)
 			assert.Equal(t, nil, err)
 			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
@@ -275,7 +276,7 @@ func TestModuleFile(t *testing.T) {
 		}
 		{
 			// 获取文件内容，失败
-			req, err := http.NewRequest("GET", "http://127.0.0.1:12345/"+filepath.Base(file3), nil)
+			req, err := http.NewRequest("GET", url+"/"+filepath.Base(file3), nil)
 			assert.Equal(t, nil, err)
 			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
@@ -294,7 +295,7 @@ func TestModuleFile(t *testing.T) {
 		// 判断文件是否存在
 		{
 			// 不存在
-			req, err := http.NewRequest("HEAD", "http://127.0.0.1:12345/abcd/efg", nil)
+			req, err := http.NewRequest("HEAD", url+"/abcd/efg", nil)
 			assert.Equal(t, nil, err)
 			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
@@ -308,7 +309,7 @@ func TestModuleFile(t *testing.T) {
 		}
 		{
 			// 文件存在
-			req, err := http.NewRequest("HEAD", "http://127.0.0.1:12345/"+filepath.Base(file1), nil)
+			req, err := http.NewRequest("HEAD", url+"/"+filepath.Base(file1), nil)
 			assert.Equal(t, nil, err)
 			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
@@ -324,7 +325,7 @@ func TestModuleFile(t *testing.T) {
 		}
 		{
 			// 目录存在
-			req, err := http.NewRequest("HEAD", "http://127.0.0.1:12345", nil)
+			req, err := http.NewRequest("HEAD", url, nil)
 			assert.Equal(t, nil, err)
 			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
@@ -344,7 +345,7 @@ func TestModuleFile(t *testing.T) {
 		file4Md5 := getMd5(file4Content)
 		{
 			// 上传文件
-			req, err := http.NewRequest("PUT", "http://127.0.0.1:12345/"+file4BaseName, bytes.NewReader(file4Content))
+			req, err := http.NewRequest("PUT", url+"/"+file4BaseName, bytes.NewReader(file4Content))
 			assert.Equal(t, nil, err)
 			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
@@ -366,7 +367,7 @@ func TestModuleFile(t *testing.T) {
 		}
 		{
 			// 获取文件内容
-			req, err := http.NewRequest("GET", "http://127.0.0.1:12345/"+file4BaseName, nil)
+			req, err := http.NewRequest("GET", url+"/"+file4BaseName, nil)
 			assert.Equal(t, nil, err)
 			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")
@@ -380,7 +381,7 @@ func TestModuleFile(t *testing.T) {
 		}
 		{
 			// 删除目录
-			req, err := http.NewRequest("DELETE", "http://127.0.0.1:12345/"+filepath.Dir(file4BaseName), nil)
+			req, err := http.NewRequest("DELETE", url+"/"+filepath.Dir(file4BaseName), nil)
 			assert.Equal(t, nil, err)
 			req.Header.Set("x-token", "testtoken")
 			req.Header.Set("x-module", "file")

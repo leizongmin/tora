@@ -34,6 +34,7 @@ func (m *ModuleFile) Handle(ctx *web.Context) {
 	f, err := resolveFilePath(m.Root, ctx.Req.URL.Path)
 	if err != nil {
 		common.ResponseApiError(ctx, err.Error(), nil)
+		return
 	}
 	switch ctx.Req.Method {
 	case "HEAD":

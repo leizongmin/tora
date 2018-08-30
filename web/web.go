@@ -21,6 +21,7 @@ type Context struct {
 	Req          *http.Request
 	Res          http.ResponseWriter
 	Log          logrus.FieldLogger
+	Util         *ContextUtil
 }
 
 type HandlerFunc = func(ctx *Context)
@@ -89,5 +90,7 @@ func (ctx *Context) Next() {
 }
 
 func NewContext(w http.ResponseWriter, r *http.Request) *Context {
-	return &Context{Req: r, Res: w}
+	ctx := &Context{Req: r, Res: w}
+	ctx.Util = NewContextUtil(ctx)
+	return ctx
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/leizongmin/tora/common"
 	"github.com/leizongmin/tora/module/file"
+	"github.com/leizongmin/tora/module/shell"
 	"github.com/leizongmin/tora/web"
 	"github.com/sirupsen/logrus"
 	"path/filepath"
@@ -27,17 +28,20 @@ type Server struct {
 	enableModuleShell bool
 	enableModuleLog   bool
 	moduleFile        *file.ModuleFile
+	moduleShell       *shell.ModuleShell
 }
 
 type Options struct {
-	Log         *logrus.Logger  // 日志输出实例
-	Addr        string          // 监听地址，格式：指定端口=:12345 指定地址和端口=127.0.0.1:12345 监听unix-socket=/path/to/sock
-	Enable      []string        // 开启的模块，可选：file, shell, log
-	FileOptions file.ModuleFile // 文件服务的根目录，如果开启了file模块，需要设置此项
-	Auth        Auth            // 授权信息
+	Log          *logrus.Logger    // 日志输出实例
+	Addr         string            // 监听地址，格式：指定端口=:12345 指定地址和端口=127.0.0.1:12345 监听unix-socket=/path/to/sock
+	Enable       []string          // 开启的模块，可选：file, shell, log
+	FileOptions  file.ModuleFile   // 文件服务配置，如果开启了file模块，需要设置此项
+	ShellOptions shell.ModuleShell // 执行命令服务配置，如果开启了shell模块，需要设置此项
+	Auth         Auth              // 授权信息
 }
 
 type FileOptions = file.ModuleFile
+type ShellOptions = shell.ModuleShell
 
 type Auth struct {
 	Token map[string]AuthItem // 允许指定token
@@ -107,6 +111,26 @@ func NewServer(options Options) (*Server, error) {
 			options.FileOptions.FilePerm = file.DefaultFilePerm
 		}
 		s.log.Infof("enable module [file] root=%s perm=[dir:%d, file:%d]", root, options.FileOptions.DirPerm, options.FileOptions.FilePerm)
+	}
+
+	if s.enableModuleShell {
+		if len(options.ShellOptions.Root) < 1 {
+			return nil, fmt.Errorf("missing option [Root] when module type [shell] is enable")
+		}
+		root, err := filepath.Abs(options.ShellOptions.Root)
+		if err != nil {
+			return nil, err
+		}
+		options.ShellOptions.Log = s.log
+		options.ShellOptions.Root = root
+		s.moduleShell = &options.ShellOptions
+		if options.ShellOptions.AllowExternalCommands == nil {
+			options.ShellOptions.AllowExternalCommands = shell.DefaultAllowExternalCommands
+		}
+		if options.ShellOptions.AllowInternalCommands == nil {
+			options.ShellOptions.AllowInternalCommands = shell.DefaultAllowInternalCommands
+		}
+		s.log.Infof("enable module [shell] root=%s internalCommands=%s externalCommands=%s", root, options.ShellOptions.AllowInternalCommands, options.ShellOptions.AllowExternalCommands)
 	}
 
 	s.Options = options
