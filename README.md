@@ -56,9 +56,9 @@ module:
     # 允许列出目录文件
     allowListDir: true
     # 创建目录的权限
-    DirPerm: 0777
+    dirPerm: 0777
     # 创建文件的权限
-    FilePerm: 0666
+    filePerm: 0666
 
 # 授权相关，包括：token（基于token验证），ip（基于IP白名单验证）
 auth:
@@ -68,6 +68,10 @@ auth:
       # 是否允许访问
       allow: true
       # 允许访问的模块列表
+      modules: ["file"]
+  ip:
+    127.0.0.1:
+      allow: true
       modules: ["file"]
 ```
 
