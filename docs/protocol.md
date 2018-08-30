@@ -23,5 +23,5 @@ tora 系统基于 HTTP 协议，每个请求包含以下请求头：
 模块：
 
 - [file](module-file.md) - 文件传输
-- [file](module-shell.md) - 执行命令
-- [file](module-log.md) - 日志监控
+- [shell](module-shell.md) - 执行命令
+- [log](module-log.md) - 日志监控
