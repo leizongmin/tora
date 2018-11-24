@@ -254,7 +254,7 @@ func (s *Server) checkIp(ctx *web.Context, ip string) (AuthInfo, bool) {
 		// 如果无法直接匹配，则尝试通配模式
 		for _, v := range s.Options.Auth.IPList {
 			if glob.Glob(v, ip) {
-				a, _ = s.Options.Auth.Token[v]
+				a, _ = s.Options.Auth.IP[v]
 				info = AuthInfo{Type: "token", Token: v}
 				info.Allow = a.Allow
 				info.Modules = a.Modules
