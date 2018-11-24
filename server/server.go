@@ -6,6 +6,7 @@ import (
 	"github.com/leizongmin/tora/module/file"
 	"github.com/leizongmin/tora/module/shell"
 	"github.com/leizongmin/tora/web"
+	"github.com/ryanuber/go-glob"
 	"github.com/sirupsen/logrus"
 	"path/filepath"
 	"strings"
@@ -44,8 +45,10 @@ type FileOptions = file.ModuleFile
 type ShellOptions = shell.ModuleShell
 
 type Auth struct {
-	Token map[string]AuthItem // 允许指定token
-	IP    map[string]AuthItem // 允许指定ip
+	Token     map[string]AuthItem // 允许指定token
+	IP        map[string]AuthItem // 允许指定ip
+	TokenList []string            // token列表
+	IPList    []string            // ip列表
 }
 
 type AuthItem struct {
@@ -133,6 +136,15 @@ func NewServer(options Options) (*Server, error) {
 		s.log.Infof("enable module [shell] root=%s internalCommands=%s externalCommands=%s", root, options.ShellOptions.AllowInternalCommands, options.ShellOptions.AllowExternalCommands)
 	}
 
+	options.Auth.TokenList = make([]string, 0)
+	for k, _ := range options.Auth.Token {
+		options.Auth.TokenList = append(options.Auth.TokenList, k)
+	}
+	options.Auth.IPList = make([]string, 0)
+	for k, _ := range options.Auth.IP {
+		options.Auth.IPList = append(options.Auth.IPList, k)
+	}
+
 	s.Options = options
 	return s, nil
 }
@@ -216,6 +228,18 @@ func (s *Server) checkToken(ctx *web.Context, token string) (AuthInfo, bool) {
 	if ok {
 		info.Allow = a.Allow
 		info.Modules = a.Modules
+	} else {
+		// 如果无法直接匹配，则尝试通配模式
+		for _, v := range s.Options.Auth.TokenList {
+			if glob.Glob(v, token) {
+				a, _ = s.Options.Auth.Token[v]
+				info = AuthInfo{Type: "token", Token: v}
+				info.Allow = a.Allow
+				info.Modules = a.Modules
+				ok = true
+				break
+			}
+		}
 	}
 	return info, ok
 }
@@ -226,6 +250,18 @@ func (s *Server) checkIp(ctx *web.Context, ip string) (AuthInfo, bool) {
 	if ok {
 		info.Allow = a.Allow
 		info.Modules = a.Modules
+	} else {
+		// 如果无法直接匹配，则尝试通配模式
+		for _, v := range s.Options.Auth.IPList {
+			if glob.Glob(v, ip) {
+				a, _ = s.Options.Auth.Token[v]
+				info = AuthInfo{Type: "token", Token: v}
+				info.Allow = a.Allow
+				info.Modules = a.Modules
+				ok = true
+				break
+			}
+		}
 	}
 	return info, ok
 }

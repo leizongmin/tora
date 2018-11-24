@@ -17,6 +17,7 @@ require (
 	github.com/onsi/ginkgo v1.6.0 // indirect
 	github.com/onsi/gomega v1.4.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/ryanuber/go-glob v0.0.0-20170128012129-256dc444b735
 	github.com/sirupsen/logrus v1.0.6
 	github.com/stretchr/testify v1.2.2
 	golang.org/x/crypto v0.0.0-20180816225734-aabede6cba87 // indirect
