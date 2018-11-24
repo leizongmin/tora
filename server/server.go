@@ -157,6 +157,12 @@ func (s *Server) handleRequest(ctx *web.Context) {
 		"module": module,
 	})
 
+	// 如果x-module=watchdog表示内部健康检查
+	if module == "watchdog" {
+		common.ResponseApiOk(ctx, common.JSON{"watchdog": true})
+		return
+	}
+
 	// 检查授权
 	auth, ok := s.checkAuth(ctx)
 	ctx.Log = ctx.Log.WithFields(logrus.Fields{

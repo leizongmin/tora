@@ -2,6 +2,7 @@ module github.com/leizongmin/tora
 
 require (
 	github.com/TylerBrock/colorjson v0.0.0-20180527164720-95ec53f28296
+	github.com/coreos/go-systemd v0.0.0-20181031085051-9002847aa142
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.7.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
