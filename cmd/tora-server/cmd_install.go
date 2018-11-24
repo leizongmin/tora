@@ -58,7 +58,7 @@ func installService(log *logrus.Logger, configFile string, config *Config, insta
 Description=tora-server
 
 [Service]
-Type=simple
+Type=notify
 ExecStart=%s -c %s
 WatchdogSec=30s
 Restart=on-failure
