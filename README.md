@@ -18,10 +18,15 @@ tora-server init -c config.yaml
 
 ```bash
 # 安装为系统服务（systemd）
-sudo tora-server install -c config.yaml -u user
+# 可以增加参数 -c config.yaml -u user
+sudo tora-server install
+sudo systemctl enable tora.service
 
 # 删除已安装的系统服务（systemd）
+sudo systemctl stop tora.service
+sudo systemctl disable tora.service
 sudo tora-server uninstall
+sudo systemctl daemon-reload
 
 # 启动服务
 sudo systemctl start tora.service
