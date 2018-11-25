@@ -13,7 +13,7 @@ import (
 )
 
 // 当前版本号
-const Version = "1.0"
+const Version = "1.1"
 
 // X-Powered-By响应头
 const PoweredBy = "tora/" + Version
