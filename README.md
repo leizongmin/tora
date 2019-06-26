@@ -33,6 +33,9 @@ sudo systemctl start tora.service
 
 # 停止服务
 sudo systemctl stop tora.service
+
+# 查看日志
+sudo journalctl -f | grep tora-server
 ```
 
 ## 配置文件格式
