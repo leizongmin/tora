@@ -1,14 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"github.com/coreos/go-systemd/daemon"
+	"github.com/leizongmin/tora/server"
+	"github.com/sirupsen/logrus"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/sirupsen/logrus"
-
-	"github.com/leizongmin/tora/server"
+	"time"
 )
 
 func cmdStart(args []string) {
@@ -28,12 +30,12 @@ func cmdStart(args []string) {
 	// 读取配置文件
 	c, err := LoadConfigFile(configFile)
 	if err != nil {
-		log.Fatalf("Load config failed: %s", err)
+		log.Fatalf("Load config failed: %s\n", err)
 	}
 
 	// 设置日志记录器
 	if level, err := logrus.ParseLevel(c.Log.Level); err != nil {
-		log.Errorf("Invalid log level: %s", c.Log.Level)
+		log.Errorf("Invalid log level: %s\n", c.Log.Level)
 	} else {
 		log.SetLevel(level)
 	}
@@ -43,7 +45,7 @@ func cmdStart(args []string) {
 	case "json":
 		log.Formatter = &logrus.JSONFormatter{}
 	default:
-		log.Errorf("Invalid log format: %s", c.Log.Format)
+		log.Errorf("Invalid log format: %s\n", c.Log.Format)
 	}
 
 	// 创建服务器实例
@@ -63,22 +65,59 @@ func cmdStart(args []string) {
 		},
 	})
 	if err != nil {
-		log.Panicf("Try to start server failed: %s", err)
+		log.Panicf("Try to start server failed: %s\n", err)
 	}
+
+	// systemd daemon
+	ok, err := daemon.SdNotify(false, "READY=1")
+	if err != nil {
+		log.Errorf("[daemon] notification supported, but failure happened: %s", err)
+	} else if !ok {
+		log.Errorln("[daemon] notification not supported")
+	} else {
+		log.Infoln("[daemon] notification supported, data has been sent")
+	}
+	// systemd watchdog
+	go func() {
+		interval, err := daemon.SdWatchdogEnabled(false)
+		if err != nil || interval == 0 {
+			log.Warnln("[daemon] watchdog is not enabled")
+			return
+		}
+		time.Sleep(interval / 3)
+		for {
+			//_, err := http.Get("http://" + c.Listen)
+			req, err := http.NewRequest("GET", "http://"+c.Listen, nil)
+			if err != nil {
+				log.Warnf("[daemon] watchdog check failed: %s\n", err)
+				continue
+			}
+			req.Header.Set("x-module", "watchdog")
+			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+			req.WithContext(ctx)
+			_, err = http.DefaultClient.Do(req)
+			if err == nil {
+				daemon.SdNotify(false, "WATCHDOG=1")
+			} else {
+				log.Warnf("[daemon] watchdog check failed: %s\n", err)
+			}
+			time.Sleep(interval / 3)
+		}
+	}()
 
 	// 接收系统信号
 	sigs := make(chan os.Signal)
 	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGUSR1, syscall.SIGUSR2)
 	go func() {
 		sig := <-sigs
-		log.Warnf("RECEIVED SIGNAL: %s", sig)
+		log.Warnf("RECEIVED SIGNAL: %s\n", sig)
 		s.Close()
 		os.Exit(1)
 	}()
 
 	// 监听端口
 	if err := s.Start(); err != nil {
-		log.Error(err)
+		log.Panicln(err)
 	}
 }
 

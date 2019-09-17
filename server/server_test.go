@@ -19,6 +19,10 @@ func TestNewServer(t *testing.T) {
 					Allow:   true,
 					Modules: []string{"file"},
 				},
+				"super*": {
+					Allow:   true,
+					Modules: []string{"file"},
+				},
 			},
 		},
 	})
@@ -105,6 +109,40 @@ func TestNewServer(t *testing.T) {
 		assert.Equal(t, jsonStringify(JSON{
 			"ok":    false,
 			"error": "currently not enable [file] module",
+			"data":  nil,
+		}), string(body))
+	}
+	{
+		// 通配符模式
+		req, err := http.NewRequest("GET", url, nil)
+		assert.Equal(t, nil, err)
+		req.Header.Set("x-token", "super666")
+		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		req.WithContext(ctx)
+		res, err := http.DefaultClient.Do(req)
+		assert.Equal(t, nil, err)
+		body, err := ioutil.ReadAll(res.Body)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, jsonStringify(JSON{
+			"ok":    false,
+			"error": "missing [x-module] header",
+			"data":  nil,
+		}), string(body))
+	}
+	{
+		// 通配符模式
+		req, err := http.NewRequest("GET", url, nil)
+		assert.Equal(t, nil, err)
+		req.Header.Set("x-token", "super 789")
+		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		req.WithContext(ctx)
+		res, err := http.DefaultClient.Do(req)
+		assert.Equal(t, nil, err)
+		body, err := ioutil.ReadAll(res.Body)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, jsonStringify(JSON{
+			"ok":    false,
+			"error": "missing [x-module] header",
 			"data":  nil,
 		}), string(body))
 	}
