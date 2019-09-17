@@ -2,11 +2,13 @@ package main
 
 import (
 	"flag"
-	"github.com/leizongmin/tora/server"
-	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/leizongmin/tora/server"
 )
 
 func cmdStart(args []string) {
